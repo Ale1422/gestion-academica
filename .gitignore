@@ -1,0 +1,45 @@
+# Entorno virtual
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+
+# Archivos de configuración de desarrollo
+*.env
+config.py
+
+# Archivos y carpetas de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Librerías instaladas por pip
+*.egg-info/
+*.egg
+*.pyd
+
+# Archivos de logs
+*.log
+logs/
+*.sqlite3
+
+# Archivos creados por el IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de configuración de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de Git
+.git/
+
+# Archivos de base de datos
+instance/
+*.db
+
+# Archivos de migración
+migrations/
