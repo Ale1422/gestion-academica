@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, request, flash
-from flask_login import current_user, login_user, logout_user
+from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 
 from app import login_manager
@@ -28,6 +28,7 @@ def login():
     return render_template('auth/login_form.html', form=form)
 
 @auth_bp.route("/usuarios", methods=["GET", "POST"])
+@login_required
 def usuarios():
     form = SignupForm()
     error = None
@@ -56,6 +57,7 @@ def usuarios():
     return render_template("auth/signup_form.html", usuarios = usuarios, form=form, error=error)
 
 @auth_bp.route('/estadousuario/<int:usuario_id>', methods = ['POST'])
+@login_required
 def cambiar_estado(usuario_id):
     user = User.get_by_id(usuario_id)
     estado = request.json.get('estado')
@@ -73,11 +75,13 @@ def cambiar_estado(usuario_id):
     return redirect(next_page)
 
 @auth_bp.route('/logout')
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('public.index'))
 
 
 @login_manager.user_loader
+@login_required
 def load_user(user_id):
     return User.get_by_id(int(user_id))
