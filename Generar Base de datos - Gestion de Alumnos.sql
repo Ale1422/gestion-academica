@@ -111,6 +111,6 @@ CREATE TABLE Logs_Acceso (
     id_usuario INT NOT NULL,
     accion VARCHAR(255) NOT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) 
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id) 
         ON DELETE CASCADE ON UPDATE CASCADE
 );
