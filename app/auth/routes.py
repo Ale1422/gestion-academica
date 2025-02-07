@@ -82,6 +82,5 @@ def logout():
 
 
 @login_manager.user_loader
-@login_required
 def load_user(user_id):
     return User.get_by_id(int(user_id))
