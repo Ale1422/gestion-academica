@@ -9,7 +9,7 @@ CREATE TABLE Alumnos (
     direccion VARCHAR(100),
     correo VARCHAR(100),
     telefono VARCHAR(20),
-    estado_academico ENUM('Regular', 'Libre', 'Promocionado') DEFAULT 'Regular'
+    estado_academico ENUM('Regular', 'Libre') DEFAULT 'Regular'
 );
 
 CREATE TABLE Carreras (

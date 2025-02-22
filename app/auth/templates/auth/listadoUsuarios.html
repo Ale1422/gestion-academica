@@ -1,0 +1,55 @@
+{% extends "base_template.html" %}
+
+{% block title %}Listado de usuarios{% endblock %}
+
+{% block content %}    
+    <div class="w-50" style="min-height: 60vh;">
+        <div class="card card-body mt-4">
+            <h3>Usuarios</h3>
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <td><strong>Nombre</strong></td>
+                    <td><strong>Apellido</strong></td>
+                    <td><strong>Email</strong></td>
+                    <td><strong>Rol</strong></td>
+                    <td><strong>Estado</strong></td>
+                </tr>
+                </thead>
+                <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.nombre }}</td>
+                    <td>{{ usuario.apellido }}</td>
+                    <td>{{ usuario.email }}</td>
+                    <td>{{ usuario.get_rol() }}</td>
+                    <td>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" {% if usuario.estado == "activo" %} checked {% endif %}  id="customSwitch{{usuario.id}}" onclick="setEstado('{{usuario.id}}',this)">
+                            <label class="custom-control-label" for="customSwitch{{usuario.id}}"></label>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function setEstado(id,element) {
+            let estado = element.checked ? 'activo': 'inactivo'
+            
+            fetch(`/estadousuario/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estado: estado })
+            })
+            .then()
+            .catch(error => console.error(' SI ESTE ES Error:', error));
+        }
+    </script>
+    
+    
+{% endblock %}

@@ -27,9 +27,9 @@ def login():
             print('No se encontro usuario')
     return render_template('auth/login_form.html', form=form)
 
-@auth_bp.route("/usuarios", methods=["GET", "POST"])
+@auth_bp.route("/usuario/crear", methods=["GET", "POST"])
 @login_required
-def usuarios():
+def crear():
     form = SignupForm()
     error = None
     usuarios = User.get_all()
@@ -52,10 +52,19 @@ def usuarios():
             # Dejamos al usuario logueado
             next_page = request.args.get('next', None)
             if not next_page or url_parse(next_page).netloc != '':
-                next_page = url_for('auth.usuarios')
+                next_page = url_for('auth.listar')
             return redirect(next_page)
     return render_template("auth/signup_form.html", usuarios = usuarios, form=form, error=error)
 
+@auth_bp.route("/usuario/listado", methods=["GET"])
+@login_required
+def listar():
+    try:
+        usuarios = User.get_all()
+        return render_template("auth/listadoUsuarios.html", usuarios = usuarios)
+    except:
+        return redirect(url_for('public.index'))
+    
 @auth_bp.route('/estadousuario/<int:usuario_id>', methods = ['POST'])
 @login_required
 def cambiar_estado(usuario_id):
@@ -71,7 +80,7 @@ def cambiar_estado(usuario_id):
     
     next_page = request.args.get('next', None)
     if not next_page or url_parse(next_page).netloc != '':
-        next_page = url_for('auth.usuarios')
+        next_page = url_for('auth.listar')
     return redirect(next_page)
 
 @auth_bp.route('/logout')

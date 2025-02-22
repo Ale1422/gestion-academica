@@ -59,7 +59,7 @@ class User(UserMixin,db.Model):
 
     @staticmethod
     def get_by_email(email):
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=email, estado='activo').first()
         return user
     @staticmethod
     def get_all():

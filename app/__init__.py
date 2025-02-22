@@ -16,7 +16,10 @@ def create_app():
     login_manager.login_view = "auth.login"
 
     db.init_app(app)
-    migrate.init_app(app, db)    
+    migrate.init_app(app, db)
+
+    from .errors import errors_bp
+    app.register_blueprint(errors_bp)
 
     from .public import public_bp
     app.register_blueprint(public_bp)

@@ -15,10 +15,23 @@
         .content-wrap {
             flex: 1;
         }
+
+        #sidebar {
+          min-height: 100vh;
+          background: #343a40;
+          color: white;
+        }
+        /* #sidebar .nav-link {
+          color: white;
+        } */
+        /* #sidebar .nav-link:hover {
+          background: #495057;
+        } */
     </style>
     <link rel="stylesheet" href="{{ url_for("static", filename="base.css") }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icono.png') }}">
     <link rel="stylesheet" href="https://bootswatch.com/4/lumen/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}">
   </head>
   <body>
@@ -28,27 +41,78 @@
         {% if current_user.is_anonymous %}
           <a class=" text-white" href="{{ url_for('auth.login') }}">Iniciar Sesion</a>
         {% else %}
-          {% if current_user.get_rol().upper() == "ADMINISTRADOR" %}
-            <a class=" text-white" href="{{ url_for('auth.usuarios') }}">Usuarios y Roles</a>
-          {% elif current_user.get_rol() == "SECRETARIA" %}
-            <a class=" text-white" href="/">Gestión de Alumnos</a>
-            <a class=" text-white" href="/">Inscripciones</a>
-            <a class=" text-white" href="/">Control de Asistencia</a>
-            <a class=" text-white" href="/">Calificaciones</a>
-            <a class=" text-white" href="/">Calendario y Eventos</a>
-          {% endif %}
           <div>
-            <a class="text-danger p-2" style="text-decoration: none;" >{{ current_user.nombre.upper() }} {{ current_user.apellido.upper() }} >{{ current_user.get_rol().upper() }}<</a>
-            <a class="text-white p-2" href="{{ url_for('auth.logout') }}">Cerrar Sesión</a>
+            <a class="text-white p-2" style="text-decoration: none;" >{{ current_user.nombre.upper() }} {{ current_user.apellido.upper() }} >{{ current_user.get_rol().upper() }}<</a>
           </div>
         {% endif %}
       </div>
     </nav>
-
-    <div class="container content-wrap">
+    <div class="d-flex">
+      <!-- Sidebar -->
+      {% if not current_user.is_anonymous %}
+      <nav id="sidebar" class="p-3 bg-secondary">
+          <ul class="nav flex-column accordion" id="menuColapsable">
+          {% if current_user.get_rol().upper() == "ADMINISTRADOR" %}
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#menuUsuario" aria-expanded="true" aria-controls="menuUsuario">
+                <i class="fas fa-users"></i>  Usuarios
+              </button>
+            </li>
+            <ul id="menuUsuario" class="collapse show" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li>
+                <a class="nav-link" href="{{ url_for('auth.crear') }}">Crear Usuario</a>
+              </li>
+              <li>
+                <a class="nav-link" href="{{ url_for('auth.listar') }}">Listado de usuarios</a>
+              </li>
+            </ul> 
+          {% elif current_user.get_rol() == "SECRETARIA" %}
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuAlumnos" aria-expanded="false" aria-controls="menuAlumnos">
+                <i class="fas fa-book-reader"></i> Alumnos
+              </button>
+            </li>
+            <ul id="menuAlumnos" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-book"></i> Gestión de Alumnos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Calificaciones</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-calendar"></i> Calendario</a>
+              </li>
+            </ul>
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuMateria" aria-expanded="false" aria-controls="menuMateria">
+                <i class="fas fa-book"></i> Materias
+              </button>
+            </li>
+            <ul id="menuMateria" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-book"></i> Gestión de Alumnos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Calificaciones</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#"><i class="fas fa-calendar"></i> Calendario</a>
+              </li>
+            </ul>
+          {% endif %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+            </li>
+          </ul>
+        </nav>
+        {% endif %}
+  
+      <!-- Contenido principal -->
+      <div class="d-flex justify-content-center flex-grow-1 p-4">
         {% block content %}{% endblock %}
+      </div>
     </div>
-    <footer class="bg-primary text-white py-4 mt-5">
+    <footer class="bg-primary text-white py-4">
       <div class="container text-center">
           <div class="row">
               <div class="col-md-4 mb-3">
