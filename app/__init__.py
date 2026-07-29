@@ -36,5 +36,8 @@ def create_app():
     from .secretaria import secretaria_bp
     app.register_blueprint(secretaria_bp)
 
+    from .materias import materia_bp
+    app.register_blueprint(materia_bp)
+
 
     return app

@@ -1,6 +1,7 @@
 from flask import abort, render_template
 
 from . import materia_bp
+from .models import Docente
 
 
 @materia_bp.route("/preceptoria")

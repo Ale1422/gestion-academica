@@ -42,7 +42,7 @@
           <a class=" text-white" href="{{ url_for('auth.login') }}">Iniciar Sesion</a>
         {% else %}
           <div>
-            <a class="text-white p-2" style="text-decoration: none;" >{{ current_user.nombre.upper() }} {{ current_user.apellido.upper() }} >{{ current_user.get_rol().upper() }}<</a>
+            <a class="text-white p-2" style="text-decoration: none;" >{{ current_user.persona.nombre.upper() }} {{ current_user.persona.apellido.upper() }} {{ current_user.username.upper() }} >{{ current_user.get_rol().upper() }}<</a>
           </div>
         {% endif %}
       </div>

@@ -19,14 +19,14 @@
                 <tbody>
                 {% for usuario in usuarios %}
                 <tr>
-                    <td>{{ usuario.nombre }}</td>
-                    <td>{{ usuario.apellido }}</td>
-                    <td>{{ usuario.email }}</td>
+                    <td>{{ usuario.persona.nombre }}</td>
+                    <td>{{ usuario.persona.apellido }}</td>
+                    <td>{{ usuario.persona.email }}</td>
                     <td>{{ usuario.get_rol() }}</td>
                     <td>
                         <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" {% if usuario.estado == "activo" %} checked {% endif %}  id="customSwitch{{usuario.id}}" onclick="setEstado('{{usuario.id}}',this)">
-                            <label class="custom-control-label" for="customSwitch{{usuario.id}}"></label>
+                            <input type="checkbox" class="custom-control-input" {% if usuario.estado %} checked {% endif %}  id="customSwitch{{usuario.id_usuario}}" onclick="setEstado('{{usuario.id_usuario}}',this)">
+                            <label class="custom-control-label" for="customSwitch{{usuario.id_usuario}}"></label>
                         </div>
                     </td>
                 </tr>
@@ -37,14 +37,14 @@
     </div>
     <script>
         function setEstado(id,element) {
-            let estado = element.checked ? 'activo': 'inactivo'
+            let estado = element.checked ? true : false;
             
             fetch(`/estadousuario/${id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ estado: estado })
+                body: JSON.stringify({ estado })
             })
             .then()
             .catch(error => console.error(' SI ESTE ES Error:', error));
