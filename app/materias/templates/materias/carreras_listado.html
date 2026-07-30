@@ -1,0 +1,64 @@
+{% extends "base_template.html" %}
+{# NOTA: el proyecto tiene base_template.html y base_template2.html sin
+   definir cuál es la vigente (ver PROJECT_STRUCTURE.md). Ajustar el
+   extends si corresponde usar la otra. #}
+
+{% block title %}Carreras{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Carreras</h2>
+        <a href="{{ url_for('materia_bp.crear_carrera') }}" class="btn btn-primary">
+            Nueva carrera
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Duración</th>
+                <th>Código de plan</th>
+                <th>Materias</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for carrera in carreras %}
+            <tr>
+                <td>{{ carrera.nombre }}</td>
+                <td>{{ carrera.duracion_anios }} año(s)</td>
+                <td>{{ carrera.codigo_plan or '-' }}</td>
+                <td>
+                    <a href="{{ url_for('materia_bp.listado_materias', id_carrera=carrera.id_carrera) }}">
+                        {{ carrera.materias|length }} materia(s)
+                    </a>
+                </td>
+                <td class="text-end">
+                    <a href="{{ url_for('materia_bp.editar_carrera', id_carrera=carrera.id_carrera) }}"
+                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                    <form action="{{ url_for('materia_bp.eliminar_carrera', id_carrera=carrera.id_carrera) }}"
+                          method="POST" class="d-inline"
+                          onsubmit="return confirm('¿Eliminar la carrera {{ carrera.nombre }}?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay carreras cargadas todavía.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

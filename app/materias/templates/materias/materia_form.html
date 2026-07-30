@@ -1,0 +1,67 @@
+{% extends "base_template.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ titulo }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.nombre.label(class="form-label") }}
+            {{ form.nombre() }}
+            {% for error in form.nombre.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.id_carrera.label(class="form-label") }}
+            {{ form.id_carrera() }}
+            {% for error in form.id_carrera.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.anio_sugerido.label(class="form-label") }}
+            {{ form.anio_sugerido() }}
+            {% for error in form.anio_sugerido.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.tipo_dictado.label(class="form-label") }}
+            {{ form.tipo_dictado() }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.carga_horaria_total.label(class="form-label") }}
+            {{ form.carga_horaria_total() }}
+            {% for error in form.carga_horaria_total.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.modalidad_aprobacion.label(class="form-label") }}
+            {{ form.modalidad_aprobacion() }}
+            {% for error in form.modalidad_aprobacion.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        {{ form.submit() }}
+        <a href="{{ url_for('materia_bp.listado_materias') }}" class="btn btn-link">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

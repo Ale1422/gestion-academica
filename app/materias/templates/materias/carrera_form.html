@@ -1,0 +1,46 @@
+{% extends "base_template.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ titulo }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.nombre.label(class="form-label") }}
+            {{ form.nombre() }}
+            {% for error in form.nombre.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.duracion_anios.label(class="form-label") }}
+            {{ form.duracion_anios() }}
+            {% for error in form.duracion_anios.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.codigo_plan.label(class="form-label") }}
+            {{ form.codigo_plan() }}
+            {% for error in form.codigo_plan.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        {{ form.submit() }}
+        <a href="{{ url_for('materia_bp.listado_carreras') }}" class="btn btn-link">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

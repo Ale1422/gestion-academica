@@ -37,7 +37,7 @@ def create_app():
     app.register_blueprint(secretaria_bp)
 
     from .materias import materia_bp
-    app.register_blueprint(materia_bp)
+    app.register_blueprint(materia_bp, url_prefix = '/materias')
 
 
     return app

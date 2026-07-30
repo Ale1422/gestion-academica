@@ -1,0 +1,77 @@
+{% extends "base_template.html" %}
+
+{% block title %}Materias{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Materias</h2>
+        <a href="{{ url_for('materia_bp.crear_materia') }}" class="btn btn-primary">
+            Nueva materia
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="GET" class="row g-2 mb-3">
+        <div class="col-auto">
+            <select name="id_carrera" class="form-select" onchange="this.form.submit()">
+                <option value="">Todas las carreras</option>
+                {% for carrera in carreras %}
+                <option value="{{ carrera.id_carrera }}"
+                    {% if id_carrera_filtro == carrera.id_carrera %}selected{% endif %}>
+                    {{ carrera.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Carrera</th>
+                <th>Año</th>
+                <th>Dictado</th>
+                <th>Modalidad</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for materia in materias %}
+            <tr>
+                <td>{{ materia.nombre }}</td>
+                <td>{{ materia.carrera.nombre }}</td>
+                <td>{{ materia.anio_sugerido }}</td>
+                <td>{{ materia.tipo_dictado }}</td>
+                <td>
+                    <span class="badge bg-secondary">{{ materia.modalidad_aprobacion }}</span>
+                </td>
+                <td class="text-end">
+                    <a href="{{ url_for('materia_bp.correlatividades', id_materia=materia.id_materia) }}"
+                       class="btn btn-sm btn-outline-info">Correlatividades</a>
+                    <a href="{{ url_for('materia_bp.editar_materia', id_materia=materia.id_materia) }}"
+                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                    <form action="{{ url_for('materia_bp.eliminar_materia', id_materia=materia.id_materia) }}"
+                          method="POST" class="d-inline"
+                          onsubmit="return confirm('¿Eliminar la materia {{ materia.nombre }}?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No hay materias cargadas para este filtro.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

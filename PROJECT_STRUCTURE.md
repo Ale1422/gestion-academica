@@ -88,4 +88,3 @@ Este documento describe la organización de carpetas y archivos del proyecto, ju
 
 - `app/templates/500.html` - plantilla de error 500 de propósito general.
 - `app/templates/base_template.html` - plantilla base compartida para otras vistas.
-- `app/templates/base_template2.html` - segunda plantilla base compartida.

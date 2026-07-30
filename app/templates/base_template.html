@@ -65,8 +65,12 @@
               <li>
                 <a class="nav-link" href="{{ url_for('auth.listar') }}">Listado de usuarios</a>
               </li>
-            </ul> 
-          {% elif current_user.get_rol() == "SECRETARIA" %}
+            </ul>
+          {% elif current_user.get_rol().upper() == "SECRETARIA" %}
+            {# NOTA: se corrigió el .upper() que faltaba acá — sin él, esta
+               rama nunca coincidía si el rol se guarda como "Secretaria"
+               (con mayúscula inicial nomás), que es como lo usa la
+               especificación funcional. #}
             <li class="nav-item">
               <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuAlumnos" aria-expanded="false" aria-controls="menuAlumnos">
                 <i class="fas fa-book-reader"></i> Alumnos
@@ -90,13 +94,10 @@
             </li>
             <ul id="menuMateria" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
               <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-book"></i> Gestión de Alumnos</a>
+                <a class="nav-link" href="{{ url_for('materia_bp.listado_carreras') }}"><i class="fas fa-graduation-cap"></i> Carreras</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Calificaciones</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-calendar"></i> Calendario</a>
+                <a class="nav-link" href="{{ url_for('materia_bp.listado_materias') }}"><i class="fas fa-book"></i> Materias</a>
               </li>
             </ul>
           {% endif %}
