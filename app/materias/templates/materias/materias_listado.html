@@ -19,7 +19,7 @@
 
     <form method="GET" class="row g-2 mb-3">
         <div class="col-auto">
-            <select name="id_carrera" class="form-select" onchange="this.form.submit()">
+            <select name="id_carrera" class="form-control" onchange="this.form.submit()">
                 <option value="">Todas las carreras</option>
                 {% for carrera in carreras %}
                 <option value="{{ carrera.id_carrera }}"
@@ -39,7 +39,7 @@
                 <th>Año</th>
                 <th>Dictado</th>
                 <th>Modalidad</th>
-                <th class="text-end">Acciones</th>
+                <th class="text-right">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -52,7 +52,7 @@
                 <td>
                     <span class="badge bg-secondary">{{ materia.modalidad_aprobacion }}</span>
                 </td>
-                <td class="text-end">
+                <td class="text-right">
                     <a href="{{ url_for('materia_bp.correlatividades', id_materia=materia.id_materia) }}"
                        class="btn btn-sm btn-outline-info">Correlatividades</a>
                     <a href="{{ url_for('materia_bp.editar_materia', id_materia=materia.id_materia) }}"

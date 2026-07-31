@@ -11,7 +11,7 @@
 - [x] `decorators.py`: control de acceso por rol (hoy cualquier logueado
       entra a cualquier ruta — falta diferenciar Secretaria/Preceptora/Admin)
 - [ ] LogsAuditoria (tabla ya existe en el DDL, falta modelo + integración)
-- [ ] Import de `Alumno` en `secretaria/routes.py` (necesario para que
+- [x] Import de `Alumno` en `secretaria/routes.py` (necesario para que
       SQLAlchemy registre la clase — sigue sin hacerse, ver módulo 3)
 
 ## 2. Carreras y Materias — CERRADO
@@ -27,6 +27,8 @@
       a `materia_bp.listado_carreras` / `materia_bp.listado_materias`
 - [x] Validado a mano por el usuario: alta de carrera, alta de materia,
       alta de correlatividad — funcionando
+- [x] Fix Bootstrap 5→4 en `materias_listado.html` (usaba `form-select` y
+      `text-end`, que rompían el estilo del `<select>` con BS 4.1.3 cargado)
 
 **Pendiente relacionado, no bloqueante:**
 - Validar cruces de negocio en la capa de aplicación (no en el DDL):
@@ -38,22 +40,24 @@
   cuando se implemente el módulo de Comisiones e Inscripciones, que es
   donde se carga el estado de cursada.
 
-## 3. Alumnos (Secretaria)
+## 3. Alumnos (Secretaria) — CERRADO
 - [x] Modelo: `Alumno` (app/secretaria/models.py)
-- [ ] Renombrar `app/secretaria/modesl.py` → `models.py` (typo de archivo
-      detectado; el contenido ya está bien, solo falta el rename)
-- [ ] Import de `Alumno` en `secretaria/routes.py` (pendiente, necesario
-      para que SQLAlchemy registre la clase)
-- [ ] Rutas: alta, edición, listado, ficha de alumno
-- [ ] Templates correspondientes
+- [x] Rename `modesl.py` → `models.py` (typo de archivo corregido)
+- [x] Import de `Alumno` en `secretaria/routes.py`
+- [x] Formulario: `AlumnoForm` (app/secretaria/forms.py, archivo nuevo)
+- [x] Rutas: crear, editar, listado (con búsqueda y filtro por estado), ficha
+- [x] Templates: alumno_form, alumno_listado, alumno_ficha
+- [ ] Decisión tomada: alta de Alumno NO crea Usuario/login — es solo
+      registro académico gestionado por la Secretaria (revisar si en el
+      futuro se agrega portal de autogestión para alumnos)
 
-## 4. Comisiones e Inscripciones — PRÓXIMO MÓDULO
-- [ ] Modelos: `Comision`, `Inscripcion`
-- [ ] Rutas: crear comisión (materia + docente + ciclo lectivo),
+## 4. Comisiones e Inscripciones — CERRADO
+- [x] Modelos: `Comision`, `Inscripcion`
+- [x] Rutas: crear comisión (materia + docente + ciclo lectivo),
       inscribir alumno a comisión
-- [ ] Validar correlatividades "Para Cursar" antes de inscribir
-- [ ] Validar `cupo_maximo` de la comisión
-- [ ] Validar `modalidad_aprobacion` vs. `estado_cursada` al cargar/cerrar
+- [x] Validar correlatividades "Para Cursar" antes de inscribir
+- [x] Validar `cupo_maximo` de la comisión
+- [x] Validar `modalidad_aprobacion` vs. `estado_cursada` al cargar/cerrar
       la cursada (ver pendiente anotado en módulo 2)
 
 ## 5. Notas

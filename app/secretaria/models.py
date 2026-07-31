@@ -1,4 +1,5 @@
 from app import db
+from datetime import datetime
 
 
 class Alumno(db.Model):
@@ -17,6 +18,7 @@ class Alumno(db.Model):
     )
 
     persona = db.relationship('Persona', back_populates='alumno')
+    inscripciones = db.relationship('Inscripcion', back_populates='alumno')
 
     def __repr__(self):
         return f'<Alumno legajo={self.legajo}>'
@@ -40,3 +42,94 @@ class Alumno(db.Model):
     @staticmethod
     def get_all():
         return Alumno.query.all()
+
+class Comision(db.Model):
+    """
+    La puesta en marcha de una Materia en un ciclo lectivo/turno
+    concreto, a cargo de un Docente. Ver gestion_academica_pro.sql
+    sección 3.
+    """
+    __tablename__ = 'Comisiones'
+
+    id_comision = db.Column(db.Integer, primary_key=True)
+    id_materia = db.Column(db.Integer, db.ForeignKey('Materias.id_materia'), nullable=False)
+    id_docente = db.Column(db.Integer, db.ForeignKey('Docentes.id_persona'), nullable=False)
+    ciclo_lectivo = db.Column(db.Integer, nullable=False)  # YEAR en el DDL
+    cuatrimestre = db.Column(db.Enum('1', '2', 'Anual'), nullable=False)
+    turno = db.Column(db.Enum('Mañana', 'Tarde', 'Noche'), nullable=False)
+    cupo_maximo = db.Column(db.Integer, default=30)
+
+    materia = db.relationship('Materia', back_populates='comisiones')
+    docente = db.relationship('Docente', back_populates='comisiones')
+    inscripciones = db.relationship(
+        'Inscripcion', back_populates='comision', cascade='all, delete-orphan'
+    )
+
+    def __repr__(self):
+        return f'<Comision materia={self.id_materia} {self.ciclo_lectivo}-{self.cuatrimestre}>'
+
+    @property
+    def cupos_disponibles(self):
+        ocupados = Inscripcion.query.filter(
+            Inscripcion.id_comision == self.id_comision,
+            Inscripcion.estado_cursada.notin_(['Abandonada', 'Libre'])
+        ).count()
+        return self.cupo_maximo - ocupados
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_by_id(id_comision):
+        return Comision.query.get(id_comision)
+
+    @staticmethod
+    def get_all():
+        return Comision.query.all()
+
+    @staticmethod
+    def get_by_materia(id_materia):
+        return Comision.query.filter_by(id_materia=id_materia).all()
+
+
+class Inscripcion(db.Model):
+    """
+    Vínculo entre un Alumno y una Comisión específica, con el
+    progreso del alumno en esa cursada.
+    """
+    __tablename__ = 'Inscripciones'
+
+    id_inscripcion = db.Column(db.Integer, primary_key=True)
+    id_alumno = db.Column(db.Integer, db.ForeignKey('Alumnos.id_persona'), nullable=False)
+    id_comision = db.Column(db.Integer, db.ForeignKey('Comisiones.id_comision'), nullable=False)
+    fecha_inscripcion = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    estado_cursada = db.Column(
+        db.Enum(
+            'Cursando', 'Promocionado', 'Regular', 'Libre',
+            'Aprobada', 'Reprobada', 'Abandonada'
+        ),
+        default='Cursando'
+    )
+
+    alumno = db.relationship('Alumno', back_populates='inscripciones')
+    comision = db.relationship('Comision', back_populates='inscripciones')
+
+    __table_args__ = (
+        db.UniqueConstraint('id_alumno', 'id_comision', name='uq_alumno_comision'),
+    )
+
+    def __repr__(self):
+        return f'<Inscripcion alumno={self.id_alumno} comision={self.id_comision}>'
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_by_id(id_inscripcion):
+        return Inscripcion.query.get(id_inscripcion)
+
+    @staticmethod
+    def get_by_alumno(id_alumno):
+        return Inscripcion.query.filter_by(id_alumno=id_alumno).all()

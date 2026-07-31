@@ -14,6 +14,7 @@ class Docente(db.Model):
     fecha_ingreso = db.Column(db.Date)
 
     persona = db.relationship('Persona', back_populates='docente')
+    comisiones = db.relationship('Comision', back_populates='docente')
 
     def __repr__(self):
         return f'<Docente cuil={self.cuil}>'
@@ -95,6 +96,7 @@ class Materia(db.Model):
     )
 
     carrera = db.relationship('Carrera', back_populates='materias')
+    comisiones = db.relationship('Comision', back_populates='materia')
 
     # Correlatividades donde ESTA materia es la que exige el requisito
     # (ej. "Programación II" requiere "Programación I")

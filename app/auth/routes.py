@@ -25,7 +25,7 @@ def login():
                 if usuario.get_rol().upper() == "ADMINISTRADOR":
                     next_page = url_for('direccion.index')
                 else:
-                    next_page = url_for('secretaria.index')
+                    next_page = url_for('secretaria_bp.index')
             return redirect(next_page)
         else:
             flash('Usuario o contraseña incorrectos.', 'danger')

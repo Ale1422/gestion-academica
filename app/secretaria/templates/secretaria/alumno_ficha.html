@@ -1,0 +1,38 @@
+{% extends "base_template.html" %}
+
+{% block title %}Ficha de {{ alumno.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ alumno.nombre_completo }}</h2>
+        <div>
+            <a href="{{ url_for('secretaria_bp.editar_alumno', id_persona=alumno.id_persona) }}"
+               class="btn btn-outline-secondary">Editar</a>
+            <a href="{{ url_for('secretaria_bp.listado_alumnos') }}"
+               class="btn btn-outline-primary">Volver al listado</a>
+        </div>
+    </div>
+
+    <div class="card card-body mb-3">
+        <h5>Datos personales</h5>
+        <table class="table table-borderless mb-0">
+            <tr><th>Legajo</th><td>{{ alumno.legajo }}</td></tr>
+            <tr><th>DNI</th><td>{{ alumno.persona.dni }}</td></tr>
+            <tr><th>Fecha de nacimiento</th><td>{{ alumno.persona.fecha_nacimiento or '-' }}</td></tr>
+            <tr><th>Email</th><td>{{ alumno.persona.email or '-' }}</td></tr>
+            <tr><th>Teléfono</th><td>{{ alumno.persona.telefono or '-' }}</td></tr>
+            <tr><th>Dirección</th><td>{{ alumno.persona.direccion or '-' }}</td></tr>
+            <tr><th>Estado académico</th><td><span class="badge bg-secondary">{{ alumno.estado_academico }}</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card card-body mb-3">
+        <h5>Historial académico</h5>
+        <p class="text-muted mb-0">
+            El historial de inscripciones y notas se habilitará cuando estén
+            implementados los módulos de Comisiones/Inscripciones (4) y Notas (5).
+        </p>
+    </div>
+</div>
+{% endblock %}

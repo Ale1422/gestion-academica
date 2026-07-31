@@ -1,0 +1,55 @@
+{% extends "base_template.html" %}
+
+{% block title %}Comisión — {{ comision.materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ comision.materia.nombre }} — {{ comision.ciclo_lectivo }} ({{ comision.cuatrimestre }})</h2>
+        <a href="{{ url_for('secretaria_bp.inscribir_alumno_comision', id_comision=comision.id_comision) }}"
+           class="btn btn-primary">
+            Inscribir alumno
+        </a>
+    </div>
+
+    <p>
+        <strong>Docente:</strong> {{ comision.docente.nombre_completo }}<br>
+        <strong>Turno:</strong> {{ comision.turno }}<br>
+        <strong>Cupo:</strong> {{ comision.cupos_disponibles }} disponibles de {{ comision.cupo_maximo }}
+    </p>
+
+    <h4 class="mt-4">Alumnos inscriptos</h4>
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Legajo</th>
+                <th>Alumno</th>
+                <th>Estado de cursada</th>
+                <th>Fecha de inscripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inscripcion in comision.inscripciones %}
+            <tr>
+                <td>{{ inscripcion.alumno.legajo }}</td>
+                <td>{{ inscripcion.alumno.nombre_completo }}</td>
+                <td><span class="badge badge-secondary">{{ inscripcion.estado_cursada }}</span></td>
+                <td>{{ inscripcion.fecha_inscripcion.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    Todavía no hay alumnos inscriptos en esta comisión.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

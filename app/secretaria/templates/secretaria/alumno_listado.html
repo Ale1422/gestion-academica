@@ -1,0 +1,68 @@
+{% extends "base_template.html" %}
+
+{% block title %}Alumnos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Alumnos</h2>
+        <a href="{{ url_for('secretaria_bp.crear_alumno') }}" class="btn btn-primary">
+            Nuevo alumno
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="GET" class="form-inline mb-3">
+        <input type="text" name="q" class="form-control mr-2 mb-2"
+               placeholder="Buscar por nombre, apellido, DNI o legajo" value="{{ q }}">
+        <select name="estado_academico" class="form-control mr-2 mb-2" onchange="this.form.submit()">
+            <option value="">Todos los estados</option>
+            {% for estado in estados %}
+            <option value="{{ estado }}" {% if estado_filtro == estado %}selected{% endif %}>{{ estado }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary mb-2">Buscar</button>
+    </form>
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Legajo</th>
+                <th>Apellido</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Estado académico</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alumno in alumnos %}
+            <tr>
+                <td>{{ alumno.legajo }}</td>
+                <td>{{ alumno.persona.apellido }}</td>
+                <td>{{ alumno.persona.nombre }}</td>
+                <td>{{ alumno.persona.dni }}</td>
+                <td><span class="badge bg-secondary">{{ alumno.estado_academico }}</span></td>
+                <td class="text-right">
+                    <a href="{{ url_for('secretaria_bp.ficha_alumno', id_persona=alumno.id_persona) }}"
+                       class="btn btn-sm btn-outline-info">Ficha</a>
+                    <a href="{{ url_for('secretaria_bp.editar_alumno', id_persona=alumno.id_persona) }}"
+                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No hay alumnos cargados para este filtro.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

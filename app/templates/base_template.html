@@ -78,7 +78,10 @@
             </li>
             <ul id="menuAlumnos" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
               <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-book"></i> Gestión de Alumnos</a>
+                <a class="nav-link" href="{{ url_for('secretaria_bp.listado_alumnos') }}"><i class="fas fa-book"></i> Listado de Alumnos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('secretaria_bp.crear_alumno') }}"><i class="fas fa-user-plus"></i> Nuevo Alumno</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Calificaciones</a>
