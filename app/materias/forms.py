@@ -1,8 +1,10 @@
 # app/materia/forms.py
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SubmitField
-from wtforms.validators import DataRequired, Length, Optional, NumberRange
+from wtforms import StringField, IntegerField, SelectField, SubmitField, TextAreaField, DateField
+from wtforms.validators import DataRequired, Length, Optional, NumberRange, Email, ValidationError
+from app.auth.models import Persona
+from app.materias.models import Materia, Docente  
 
 
 class CarreraForm(FlaskForm):
@@ -91,3 +93,51 @@ class CorrelatividadForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.id_materia_requerida.choices = []
+
+class DocenteForm(FlaskForm):
+    nombre = StringField('Nombre', validators=[DataRequired(), Length(max=50)],
+                          render_kw={'class': 'form-control'})
+    apellido = StringField('Apellido', validators=[DataRequired(), Length(max=50)],
+                            render_kw={'class': 'form-control'})
+    dni = StringField('DNI', validators=[DataRequired(), Length(max=15)],
+                       render_kw={'class': 'form-control'})
+    fecha_nacimiento = DateField('Fecha de nacimiento', validators=[Optional()],
+                                  format='%Y-%m-%d', render_kw={'class': 'form-control'})
+    email = StringField('Email', validators=[Optional(), Email(), Length(max=100)],
+                         render_kw={'class': 'form-control'})
+    telefono = StringField('Teléfono', validators=[Optional(), Length(max=20)],
+                            render_kw={'class': 'form-control'})
+    direccion = StringField('Dirección', validators=[Optional(), Length(max=100)],
+                             render_kw={'class': 'form-control'})
+    cuil = StringField('CUIL', validators=[DataRequired(), Length(max=15)],
+                        render_kw={'class': 'form-control', 'placeholder': '20-12345678-9'})
+    especialidad = TextAreaField('Especialidad', validators=[Optional()],
+                                  render_kw={'class': 'form-control', 'rows': 3})
+    fecha_ingreso = DateField('Fecha de ingreso', validators=[Optional()],
+                               format='%Y-%m-%d', render_kw={'class': 'form-control'})
+    submit = SubmitField('Guardar', render_kw={'class': 'btn btn-primary'})
+
+    def __init__(self, id_persona_actual=None, *args, **kwargs):
+        """
+        id_persona_actual: se pasa al editar, mismo patrón que AlumnoForm,
+        para que las validaciones de unicidad ignoren el propio registro.
+        """
+        super().__init__(*args, **kwargs)
+        self._id_persona_actual = id_persona_actual
+
+    def validate_dni(self, field):
+        persona = Persona.query.filter_by(dni=field.data).first()
+        if persona and persona.id_persona != self._id_persona_actual:
+            raise ValidationError('Ya existe una persona registrada con ese DNI.')
+
+    def validate_email(self, field):
+        if not field.data:
+            return
+        persona = Persona.query.filter_by(email=field.data).first()
+        if persona and persona.id_persona != self._id_persona_actual:
+            raise ValidationError('Ya existe una persona registrada con ese email.')
+
+    def validate_cuil(self, field):
+        docente = Docente.query.filter_by(cuil=field.data).first()
+        if docente and docente.id_persona != self._id_persona_actual:
+            raise ValidationError('Ya existe un docente con ese CUIL.')

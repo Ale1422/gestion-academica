@@ -5,6 +5,8 @@ from app import db
 from . import materia_bp
 from .models import Docente, Carrera, Materia, Correlatividad
 from .forms import CarreraForm, MateriaForm, CorrelatividadForm
+from app.auth.models import Persona
+from app.materias.forms import DocenteForm 
 
 
 # ------------------------------------------------------------------
@@ -259,3 +261,109 @@ def eliminar_correlatividad(id_materia, id_materia_requerida, tipo_requisito):
     else:
         flash('Correlatividad no encontrada.', 'danger')
     return redirect(url_for('materia_bp.correlatividades', id_materia=id_materia))
+
+@materia_bp.route('/docente/crear', methods=['GET', 'POST'])
+@login_required
+def crear_docente():
+    form = DocenteForm()
+    if form.validate_on_submit():
+        persona = Persona(
+            dni=form.dni.data,
+            nombre=form.nombre.data,
+            apellido=form.apellido.data,
+            fecha_nacimiento=form.fecha_nacimiento.data,
+            email=form.email.data or None,
+            telefono=form.telefono.data,
+            direccion=form.direccion.data,
+        )
+        db.session.add(persona)
+        db.session.flush()  # asigna persona.id_persona sin cerrar la transacción
+
+        docente = Docente(
+            id_persona=persona.id_persona,
+            cuil=form.cuil.data,
+            especialidad=form.especialidad.data,
+            fecha_ingreso=form.fecha_ingreso.data,
+        )
+        db.session.add(docente)
+        db.session.commit()
+
+        flash(f'Docente {persona.nombre_completo} creado correctamente.', 'success')
+        return redirect(url_for('materia_bp.listado_docentes'))
+
+    return render_template('materias/docente_form.html', form=form, titulo='Nuevo docente')
+
+
+@materia_bp.route('/docente/editar/<int:id_persona>', methods=['GET', 'POST'])
+@login_required
+def editar_docente(id_persona):
+    docente = Docente.get_by_id(id_persona)
+    if docente is None:
+        flash('Docente no encontrado.', 'danger')
+        return redirect(url_for('materia_bp.listado_docentes'))
+
+    persona = docente.persona
+    form = DocenteForm(id_persona_actual=id_persona)
+
+    if request.method == 'GET':
+        form.nombre.data = persona.nombre
+        form.apellido.data = persona.apellido
+        form.dni.data = persona.dni
+        form.fecha_nacimiento.data = persona.fecha_nacimiento
+        form.email.data = persona.email
+        form.telefono.data = persona.telefono
+        form.direccion.data = persona.direccion
+        form.cuil.data = docente.cuil
+        form.especialidad.data = docente.especialidad
+        form.fecha_ingreso.data = docente.fecha_ingreso
+
+    if form.validate_on_submit():
+        persona.dni = form.dni.data
+        persona.nombre = form.nombre.data
+        persona.apellido = form.apellido.data
+        persona.fecha_nacimiento = form.fecha_nacimiento.data
+        persona.email = form.email.data or None
+        persona.telefono = form.telefono.data
+        persona.direccion = form.direccion.data
+
+        docente.cuil = form.cuil.data
+        docente.especialidad = form.especialidad.data
+        docente.fecha_ingreso = form.fecha_ingreso.data
+
+        db.session.commit()
+        flash(f'Datos de {persona.nombre_completo} actualizados.', 'success')
+        return redirect(url_for('materia_bp.listado_docentes'))
+
+    return render_template('materias/docente_form.html', form=form, titulo='Editar docente', docente=docente)
+
+
+@materia_bp.route('/docente/listado')
+@login_required
+def listado_docentes():
+    q = request.args.get('q', '').strip()
+
+    query = Docente.query.join(Persona)
+    if q:
+        like = f'%{q}%'
+        query = query.filter(
+            db.or_(
+                Persona.apellido.ilike(like),
+                Persona.nombre.ilike(like),
+                Persona.dni.ilike(like),
+                Docente.cuil.ilike(like),
+            )
+        )
+
+    docentes = query.order_by(Persona.apellido, Persona.nombre).all()
+    return render_template('materias/docente_listado.html', docentes=docentes, q=q)
+
+
+@materia_bp.route('/docente/ficha/<int:id_persona>')
+@login_required
+def ficha_docente(id_persona):
+    docente = Docente.get_by_id(id_persona)
+    if docente is None:
+        flash('Docente no encontrado.', 'danger')
+        return redirect(url_for('materia_bp.listado_docentes'))
+
+    return render_template('materias/docente_ficha.html', docente=docente)

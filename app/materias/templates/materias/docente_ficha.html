@@ -1,0 +1,61 @@
+{% extends "base_template.html" %}
+
+{% block title %}Ficha de {{ docente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ docente.nombre_completo }}</h2>
+        <div>
+            <a href="{{ url_for('materia_bp.editar_docente', id_persona=docente.id_persona) }}"
+               class="btn btn-outline-secondary">Editar</a>
+            <a href="{{ url_for('materia_bp.listado_docentes') }}"
+               class="btn btn-outline-primary">Volver al listado</a>
+        </div>
+    </div>
+
+    <div class="card card-body mb-3">
+        <h5>Datos personales</h5>
+        <table class="table table-borderless mb-0">
+            <tr><th>CUIL</th><td>{{ docente.cuil }}</td></tr>
+            <tr><th>DNI</th><td>{{ docente.persona.dni }}</td></tr>
+            <tr><th>Fecha de nacimiento</th><td>{{ docente.persona.fecha_nacimiento or '-' }}</td></tr>
+            <tr><th>Email</th><td>{{ docente.persona.email or '-' }}</td></tr>
+            <tr><th>Teléfono</th><td>{{ docente.persona.telefono or '-' }}</td></tr>
+            <tr><th>Dirección</th><td>{{ docente.persona.direccion or '-' }}</td></tr>
+            <tr><th>Especialidad</th><td>{{ docente.especialidad or '-' }}</td></tr>
+            <tr><th>Fecha de ingreso</th><td>{{ docente.fecha_ingreso or '-' }}</td></tr>
+        </table>
+    </div>
+
+    <div class="card card-body mb-3">
+        <h5>Comisiones a cargo</h5>
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    <th>Ciclo lectivo</th>
+                    <th>Cuatrimestre</th>
+                    <th>Turno</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comision in docente.comisiones %}
+                <tr>
+                    <td>{{ comision.materia.nombre }}</td>
+                    <td>{{ comision.ciclo_lectivo }}</td>
+                    <td>{{ comision.cuatrimestre }}</td>
+                    <td>{{ comision.turno }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">
+                        Este docente todavía no tiene comisiones a cargo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

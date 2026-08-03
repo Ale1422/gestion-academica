@@ -91,6 +91,22 @@
               </li>
             </ul>
             <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuComisiones" aria-expanded="false" aria-controls="menuComisiones">
+                <i class="fas fa-chalkboard"></i> Comisiones
+              </button>
+            </li>
+            <ul id="menuComisiones" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('secretaria_bp.listado_comisiones') }}"><i class="fas fa-list"></i> Listado de comisiones</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('secretaria_bp.crear_comision') }}"><i class="fas fa-plus"></i> Nueva comisión</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('secretaria_bp.crear_comisiones_lote') }}"><i class="fas fa-layer-group"></i> Nuevas comisiones (lote)</a>
+              </li>
+            </ul>
+            <li class="nav-item">
               <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuMateria" aria-expanded="false" aria-controls="menuMateria">
                 <i class="fas fa-book"></i> Materias
               </button>
@@ -101,6 +117,9 @@
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('materia_bp.listado_materias') }}"><i class="fas fa-book"></i> Materias</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('materia_bp.listado_docentes') }}"><i class="fas fa-chalkboard-teacher"></i> Docentes</a>
               </li>
             </ul>
           {% endif %}

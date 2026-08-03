@@ -110,3 +110,21 @@ class AlumnoForm(FlaskForm):
         alumno = Alumno.query.filter_by(legajo=field.data).first()
         if alumno and alumno.id_persona != self._id_persona_actual:
             raise ValidationError('Ya existe un alumno con ese legajo.')
+
+class LoteComisionForm(FlaskForm):
+    """
+    Formulario vacío que solo aporta el token CSRF para el alta en lote
+    de comisiones. Los campos de la tabla (materias tildadas, docente
+    por fila, etc.) son dinámicos según la carrera/año elegidos en el
+    paso 1, así que se leen directo de request.form en la vista en vez
+    de declararse acá como campos fijos.
+    """
+    pass
+
+class InscripcionLoteForm(FlaskForm):
+    """
+    Formulario vacío, solo aporta el token CSRF para la inscripción en
+    lote. Los alumnos tildados se leen de request.form en la vista,
+    igual que en LoteComisionForm.
+    """
+    pass

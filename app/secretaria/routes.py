@@ -4,9 +4,11 @@ from flask_login import login_required
 from app import db
 from app.secretaria import secretaria_bp
 from app.secretaria.models import Alumno, Comision, Inscripcion  # Alumno: import pendiente, ver EstadoProyecto
-from app.secretaria.forms import ComisionForm, InscripcionForm, AlumnoForm
+from app.secretaria.forms import ComisionForm, InscripcionForm, AlumnoForm, LoteComisionForm, InscripcionLoteForm
 from app.secretaria.validaciones import inscribir_alumno, ValidacionError
 from app.auth.models import Persona
+
+from app.materias.models import Carrera, Materia, Docente 
 
 
 # --- Comisiones ---
@@ -176,15 +178,137 @@ def inscribir_alumno_comision(id_comision):
         flash('La comisión no existe.', 'warning')
         return redirect(url_for('secretaria_bp.listado_comisiones'))
 
-    form = InscripcionForm()
-    if form.validate_on_submit():
-        try:
-            inscribir_alumno(id_alumno=form.id_alumno.data, id_comision=id_comision)
-            flash('Alumno inscripto correctamente.', 'success')
-            return redirect(url_for('secretaria_bp.ficha_comision', id_comision=id_comision))
-        except ValidacionError as e:
-            flash(str(e), 'danger')
+    form = InscripcionLoteForm()
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Token de seguridad inválido, reintentá.', 'danger')
+            return redirect(url_for('secretaria_bp.inscribir_alumno_comision', id_comision=id_comision))
+
+        ids_alumnos = request.form.getlist('alumnos[]', type=int)
+        if not ids_alumnos:
+            flash('No seleccionaste ningún alumno.', 'warning')
+            return redirect(url_for('secretaria_bp.inscribir_alumno_comision', id_comision=id_comision))
+
+        inscriptos = []
+        rechazados = []
+        for id_alumno in ids_alumnos:
+            try:
+                inscribir_alumno(id_alumno=id_alumno, id_comision=id_comision)
+                alumno = Alumno.get_by_id(id_alumno)
+                inscriptos.append(alumno.nombre_completo if alumno else str(id_alumno))
+            except ValidacionError as e:
+                alumno = Alumno.get_by_id(id_alumno)
+                nombre = alumno.nombre_completo if alumno else str(id_alumno)
+                rechazados.append(f'{nombre}: {e}')
+
+        if inscriptos:
+            flash(f'Se inscribieron {len(inscriptos)} alumnos: {", ".join(inscriptos)}.', 'success')
+        if rechazados:
+            flash('No se pudieron inscribir: ' + ' | '.join(rechazados), 'warning')
+
+        return redirect(url_for('secretaria_bp.ficha_comision', id_comision=id_comision))
+
+    # GET — listado de candidatos, excluyendo a los ya inscriptos
+    q = request.args.get('q', '').strip()
+
+    ya_inscriptos_ids = [i.id_alumno for i in comision.inscripciones]
+
+    query = Alumno.query.join(Persona).filter(Alumno.id_persona.notin_(ya_inscriptos_ids or [0]))
+    if q:
+        like = f'%{q}%'
+        query = query.filter(
+            db.or_(
+                Persona.apellido.ilike(like),
+                Persona.nombre.ilike(like),
+                Persona.dni.ilike(like),
+                Alumno.legajo.ilike(like),
+            )
+        )
+    candidatos = query.order_by(Persona.apellido, Persona.nombre).all()
 
     return render_template(
-        'secretaria/inscripcion_form.html', form=form, comision=comision
+        'secretaria/inscripcion_form.html',
+        form=form, comision=comision, candidatos=candidatos, q=q,
     )
+
+@secretaria_bp.route('/comision/crear_lote', methods=['GET', 'POST'])
+@login_required
+def crear_comisiones_lote():
+    form = LoteComisionForm()
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Token de seguridad inválido, reintentá.', 'danger')
+            return redirect(url_for('secretaria_bp.crear_comisiones_lote'))
+
+        ciclo_lectivo = request.form.get('ciclo_lectivo', type=int)
+        cuatrimestre = request.form.get('cuatrimestre')
+        turno = request.form.get('turno')
+        cupo_maximo = request.form.get('cupo_maximo', type=int) or 30
+        materias_ids = request.form.getlist('materias[]', type=int)
+
+        if not materias_ids:
+            flash('No seleccionaste ninguna materia.', 'warning')
+            return redirect(url_for('secretaria_bp.crear_comisiones_lote'))
+
+        creadas = 0
+        omitidas = []
+        for id_materia in materias_ids:
+            id_docente = request.form.get(f'docente_{id_materia}', type=int)
+            if not id_docente:
+                materia = Materia.get_by_id(id_materia)
+                omitidas.append(materia.nombre if materia else str(id_materia))
+                continue
+            db.session.add(Comision(
+                id_materia=id_materia,
+                id_docente=id_docente,
+                ciclo_lectivo=ciclo_lectivo,
+                cuatrimestre=cuatrimestre,
+                turno=turno,
+                cupo_maximo=cupo_maximo,
+            ))
+            creadas += 1
+
+        db.session.commit()
+
+        if creadas:
+            flash(f'Se crearon {creadas} comisiones correctamente.', 'success')
+        if omitidas:
+            flash(f'Se omitieron (sin docente elegido): {", ".join(omitidas)}.', 'warning')
+
+        return redirect(url_for('secretaria_bp.listado_comisiones'))
+
+    # GET — paso 1 (filtro) y, si ya vienen los parámetros, paso 2 (tabla)
+    carreras = Carrera.get_all()
+    docentes = Docente.get_all()
+
+    id_carrera = request.args.get('id_carrera', type=int)
+    anio_sugerido = request.args.get('anio_sugerido', type=int)
+    ciclo_lectivo = request.args.get('ciclo_lectivo', type=int)
+    cuatrimestre = request.args.get('cuatrimestre', '')
+    turno = request.args.get('turno', '')
+    cupo_maximo = request.args.get('cupo_maximo', type=int) or 30
+
+    materias = []
+    if id_carrera and anio_sugerido:
+        materias = Materia.query.filter_by(
+            id_carrera=id_carrera, anio_sugerido=anio_sugerido
+        ).order_by(Materia.nombre).all()
+
+    return render_template(
+        'secretaria/comision_lote_form.html',
+        form=form,
+        carreras=carreras,
+        docentes=docentes,
+        materias=materias,
+        id_carrera=id_carrera,
+        anio_sugerido=anio_sugerido,
+        ciclo_lectivo=ciclo_lectivo,
+        cuatrimestre=cuatrimestre,
+        turno=turno,
+        cupo_maximo=cupo_maximo,
+    )
+
+from app.secretaria.forms import InscripcionLoteForm  # sumar al import existente de forms
+

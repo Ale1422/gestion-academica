@@ -59,6 +59,13 @@
 - [x] Validar `cupo_maximo` de la comisión
 - [x] Validar `modalidad_aprobacion` vs. `estado_cursada` al cargar/cerrar
       la cursada (ver pendiente anotado en módulo 2)
+- [x] Alta en lote de Comisiones (`/comision/crear_lote`) — genera varias
+      comisiones de una carrera/año/ciclo lectivo en un solo submit,
+      docente por materia, cuatrimestre/turno/cupo generales para el lote.
+- [x] Inscripción en lote de Alumnos a una Comisión (`/comision/<id>/inscribir`)
+      — reemplaza el select único por tabla con checkboxes y buscador;
+      reutiliza `inscribir_alumno()` por cada alumno tildado, sin frenar
+      el lote si alguno falla por cupo o correlatividades.
 
 ## 5. Notas
 - [ ] Modelo: `Nota`

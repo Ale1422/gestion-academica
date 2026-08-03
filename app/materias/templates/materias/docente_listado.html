@@ -1,0 +1,62 @@
+{% extends "base_template.html" %}
+
+{% block title %}Docentes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Docentes</h2>
+        <a href="{{ url_for('materia_bp.crear_docente') }}" class="btn btn-primary">
+            Nuevo docente
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="GET" class="form-inline mb-3">
+        <input type="text" name="q" class="form-control mr-2 mb-2"
+               placeholder="Buscar por nombre, apellido, DNI o CUIL" value="{{ q }}">
+        <button type="submit" class="btn btn-secondary mb-2">Buscar</button>
+    </form>
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Apellido</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>CUIL</th>
+                <th>Especialidad</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for docente in docentes %}
+            <tr>
+                <td>{{ docente.persona.apellido }}</td>
+                <td>{{ docente.persona.nombre }}</td>
+                <td>{{ docente.persona.dni }}</td>
+                <td>{{ docente.cuil }}</td>
+                <td>{{ docente.especialidad or '-' }}</td>
+                <td class="text-right">
+                    <a href="{{ url_for('materia_bp.ficha_docente', id_persona=docente.id_persona) }}"
+                       class="btn btn-sm btn-outline-info">Ficha</a>
+                    <a href="{{ url_for('materia_bp.editar_docente', id_persona=docente.id_persona) }}"
+                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No hay docentes cargados todavía.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

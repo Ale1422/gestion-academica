@@ -1,0 +1,109 @@
+{% extends "base_template.html" %}
+
+{% block title %}Nuevas comisiones (lote){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <h3 class="mb-4">Nuevas comisiones (lote)</h3>
+
+    <!-- Paso 1: filtro -->
+    <div class="card card-body mb-4">
+        <form method="GET" class="form-inline">
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Carrera</label>
+                <select name="id_carrera" class="form-control">
+                    <option value="">-- elegir --</option>
+                    {% for carrera in carreras %}
+                    <option value="{{ carrera.id_carrera }}" {% if id_carrera == carrera.id_carrera %}selected{% endif %}>
+                        {{ carrera.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Año</label>
+                <input type="number" name="anio_sugerido" class="form-control" style="width: 80px;"
+                       value="{{ anio_sugerido or '' }}" min="1" max="10">
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Ciclo lectivo</label>
+                <input type="number" name="ciclo_lectivo" class="form-control" style="width: 100px;"
+                       value="{{ ciclo_lectivo or '' }}" min="2000" max="2100">
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Cuatrimestre</label>
+                <select name="cuatrimestre" class="form-control">
+                    <option value="1" {% if cuatrimestre == '1' %}selected{% endif %}>1°</option>
+                    <option value="2" {% if cuatrimestre == '2' %}selected{% endif %}>2°</option>
+                    <option value="Anual" {% if cuatrimestre == 'Anual' %}selected{% endif %}>Anual</option>
+                </select>
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Turno</label>
+                <select name="turno" class="form-control">
+                    <option value="Mañana" {% if turno == 'Mañana' %}selected{% endif %}>Mañana</option>
+                    <option value="Tarde" {% if turno == 'Tarde' %}selected{% endif %}>Tarde</option>
+                    <option value="Noche" {% if turno == 'Noche' %}selected{% endif %}>Noche</option>
+                </select>
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <label class="mr-2">Cupo</label>
+                <input type="number" name="cupo_maximo" class="form-control" style="width: 80px;"
+                       value="{{ cupo_maximo }}" min="1" max="200">
+            </div>
+            <button type="submit" class="btn btn-secondary mb-2">Buscar materias</button>
+        </form>
+    </div>
+
+    <!-- Paso 2: tabla de materias, solo si ya se buscó -->
+    {% if id_carrera and anio_sugerido %}
+        {% if materias %}
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="ciclo_lectivo" value="{{ ciclo_lectivo }}">
+            <input type="hidden" name="cuatrimestre" value="{{ cuatrimestre }}">
+            <input type="hidden" name="turno" value="{{ turno }}">
+            <input type="hidden" name="cupo_maximo" value="{{ cupo_maximo }}">
+
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Materia</th>
+                        <th>Docente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for materia in materias %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="materias[]" value="{{ materia.id_materia }}" checked>
+                        </td>
+                        <td>{{ materia.nombre }}</td>
+                        <td>
+                            <select name="docente_{{ materia.id_materia }}" class="form-control">
+                                <option value="">-- elegir docente --</option>
+                                {% for docente in docentes %}
+                                <option value="{{ docente.id_persona }}">{{ docente.nombre_completo }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-primary">Crear comisiones seleccionadas</button>
+        </form>
+        {% else %}
+        <p class="text-muted">No hay materias cargadas para esa carrera/año.</p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base_template.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="w-50" style="min-height: 60vh;">
+        <div class="card card-body container mt-4">
+            <h3 class="text-center mb-4 mt-2">{{ titulo }}</h3>
+            <form action="" method="post" novalidate>
+                {{ form.hidden_tag() }}
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.nombre.label }}
+                        {{ form.nombre(class="form-control") }}
+                        {% for error in form.nombre.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.apellido.label }}
+                        {{ form.apellido(class="form-control") }}
+                        {% for error in form.apellido.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.dni.label }}
+                        {{ form.dni(class="form-control") }}
+                        {% for error in form.dni.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.fecha_nacimiento.label }}
+                        {{ form.fecha_nacimiento(class="form-control") }}
+                        {% for error in form.fecha_nacimiento.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.email.label }}
+                        {{ form.email(class="form-control") }}
+                        {% for error in form.email.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.telefono.label }}
+                        {{ form.telefono(class="form-control") }}
+                        {% for error in form.telefono.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.direccion.label }}
+                        {{ form.direccion(class="form-control") }}
+                        {% for error in form.direccion.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.cuil.label }}
+                        {{ form.cuil(class="form-control") }}
+                        {% for error in form.cuil.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.especialidad.label }}
+                        {{ form.especialidad(class="form-control") }}
+                        {% for error in form.especialidad.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div class="w-75">
+                        {{ form.fecha_ingreso.label }}
+                        {{ form.fecha_ingreso(class="form-control") }}
+                        {% for error in form.fecha_ingreso.errors %}
+                            <span style="color: red;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center">
+                    {{ form.submit(class="btn btn-primary w-25") }}
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

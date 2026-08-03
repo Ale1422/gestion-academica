@@ -1,34 +1,73 @@
 {% extends "base_template.html" %}
 
-{% block title %}Inscribir alumno{% endblock %}
+{% block title %}Inscribir alumnos{% endblock %}
 
 {% block content %}
+<div class="container mt-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
             <div class="alert alert-{{ category }}">{{ message }}</div>
         {% endfor %}
     {% endwith %}
 
-    <div class="w-50" style="min-height: 60vh;">
-        <div class="card card-body container mt-4">
-            <h3 class="text-center mb-4 mt-2">
-                Inscribir alumno — {{ comision.materia.nombre }} ({{ comision.ciclo_lectivo }})
-            </h3>
-            <form action="" method="post" novalidate>
-                {{ form.hidden_tag() }}
-                <div class="mb-3 d-flex justify-content-center">
-                    <div class="w-75">
-                        {{ form.id_alumno.label(class="form-label") }}
-                        {{ form.id_alumno(class="form-control") }}
-                        {% for error in form.id_alumno.errors %}
-                            <span style="color: red;">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="d-flex justify-content-center">
-                    {{ form.submit(class="btn btn-primary w-25") }}
-                </div>
-            </form>
+    <h3 class="mb-1">Inscribir alumnos</h3>
+    <p class="text-muted mb-4">{{ comision.materia.nombre }} — {{ comision.ciclo_lectivo }} ({{ comision.cuatrimestre }}, {{ comision.turno }})</p>
+
+    <form method="GET" class="form-inline mb-3">
+        <input type="text" name="q" class="form-control mr-2 mb-2"
+               placeholder="Buscar por nombre, apellido, DNI o legajo" value="{{ q }}">
+        <button type="submit" class="btn btn-secondary mb-2">Buscar</button>
+    </form>
+
+    {% if candidatos %}
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(true)">Marcar todos</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="marcarTodos(false)">Desmarcar todos</button>
         </div>
-    </div>
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"></th>
+                    <th>Legajo</th>
+                    <th>Apellido</th>
+                    <th>Nombre</th>
+                    <th>DNI</th>
+                    <th>Estado académico</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alumno in candidatos %}
+                <tr>
+                    <td><input type="checkbox" class="chk-alumno" name="alumnos[]" value="{{ alumno.id_persona }}"></td>
+                    <td>{{ alumno.legajo }}</td>
+                    <td>{{ alumno.persona.apellido }}</td>
+                    <td>{{ alumno.persona.nombre }}</td>
+                    <td>{{ alumno.persona.dni }}</td>
+                    <td><span class="badge bg-secondary">{{ alumno.estado_academico }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Inscribir seleccionados</button>
+    </form>
+    {% else %}
+    <p class="text-muted">
+        {% if q %}
+            No se encontraron alumnos para esa búsqueda (o ya están todos inscriptos en esta comisión).
+        {% else %}
+            No hay alumnos disponibles para inscribir en esta comisión (puede que ya estén todos inscriptos).
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+
+<script>
+function marcarTodos(estado) {
+    document.querySelectorAll('.chk-alumno').forEach(function (chk) {
+        chk.checked = estado;
+    });
+}
+</script>
 {% endblock %}
