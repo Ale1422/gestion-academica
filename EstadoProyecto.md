@@ -67,13 +67,73 @@
       reutiliza `inscribir_alumno()` por cada alumno tildado, sin frenar
       el lote si alguno falla por cupo o correlatividades.
 
-## 5. Notas
-- [ ] Modelo: `Nota`
-- [ ] Rutas: carga de notas por inscripción, historial académico del alumno
+## 5. Notas — CERRADO
+- [x] Modelo: `Nota` (app/secretaria/models.py) + relación `Inscripcion.notas`
+- [x] Formularios: `NotaEntryForm`, `NotasLoteForm` (app/secretaria/forms.py)
+- [x] Ruta: carga de notas en lote por comisión (`/comision/<id>/notas`),
+      tabla con una fila por alumno inscripto (instancia + valor + fecha),
+      filas vacías se ignoran, no frena el lote si una fila falla validación
+- [x] Historial académico real en `alumno_ficha.html` (antes era un
+      placeholder): tabla de inscripciones con estado y notas
+- [x] `registrar_nota()` en validaciones.py: al cargar instancia 'Final'
+      actualiza automáticamente `estado_cursada` (Aprobada/Reprobada) y
+      bloquea Final en materias `modalidad_aprobacion='Promocional'`
+      (cierra pendiente del módulo 2)
 
-## 6. Asistencia (Preceptoria)
-- [ ] Modelo: `Asistencia`
-- [ ] Rutas: registro diario, historial por alumno, alertas de inasistencia
+**Decisión pendiente de confirmar (no cerrada, revisar con el usuario real
+del instituto):**
+- `NOTA_MINIMA_APROBACION = 6` en `validaciones.py` es un default asumido,
+  no un dato confirmado por el instituto. Ajustar ahí si corresponde otro
+  valor.
+- Solo la instancia `Final` dispara cambio automático de `estado_cursada`.
+  `Recuperatorio` no automatiza nada porque el DDL no distingue si recupera
+  un parcial o el final — si hace falta, hay que definir esa regla primero.
+
+## 6. Asistencia (Preceptoria) — CERRADO
+- [x] Modelo: `Asistencia` (app/preceptoria/models.py, blueprint y archivo
+      nuevos) — mapea la tabla `Asistencias` del DDL
+- [x] Relación `Inscripcion.asistencias` agregada en
+      `app/secretaria/models.py` (cascade='all, delete-orphan', mismo
+      patrón que `notas`)
+- [x] `Asistencia.registrar()`: upsert por `(id_inscripcion, fecha)` a
+      nivel aplicación — el DDL de referencia no tiene
+      `UNIQUE(id_inscripcion, fecha)`, así que la app es la que garantiza
+      no duplicar el registro del mismo alumno el mismo día. **Pendiente
+      no bloqueante:** si se quiere blindar esto en la base, agregar esa
+      constraint al DDL con una migración aparte.
+- [x] Formularios: `AsistenciaFilaForm`, `AsistenciaLoteForm`
+      (app/preceptoria/forms.py, archivo nuevo) — mismo patrón de
+      FieldList/FormField que `NotasLoteForm` del módulo 5
+- [x] Rutas (app/preceptoria/routes.py):
+  - `GET/POST /preceptoria` → `index`, listado de comisiones
+  - `GET/POST /preceptoria/comision/<id>/asistencia` → `registrar_asistencia`,
+    carga en lote por comisión + fecha (una fila por alumno inscripto,
+    excluye `Abandonada`/`Libre`); el selector de fecha recarga el form
+    vía querystring para poder editar un día ya cargado
+  - `GET /preceptoria/alumno/<id_persona>/historial` → `historial_asistencia`,
+    detalle por alumno agrupado por inscripción/comisión
+  - `GET /preceptoria/comision/<id>/reporte` → `reporte_asistencia`,
+    listado de % de inasistencia por alumno de la comisión, ordenado de
+    mayor a menor riesgo
+- [x] Templates: `index.html`, `registro_asistencia.html`,
+      `historial_asistencia.html`, `reporte_asistencia.html`
+      (app/preceptoria/templates/preceptoria/)
+- [x] Submenú "Asistencia" agregado en `base_template.html` para el rol
+      `PRECEPTORA` (antes el sidebar solo tenía ramas para
+      `ADMINISTRADOR` y `SECRETARIA`)
+
+**Decisión pendiente de confirmar (no cerrada, revisar con el usuario real
+del instituto):**
+- `UMBRAL_ALERTA_INASISTENCIA = 0.25` en `app/preceptoria/validaciones.py`
+  es un default asumido (25% de clases `'Ausente'` sobre el total de
+  clases registradas en esa cursada), no un dato confirmado por el
+  instituto. **Decisión explícita del usuario:** por ahora queda como
+  constante de módulo, editable solo desde el código — no se agrega
+  pantalla de configuración para esto todavía.
+- `'Justificado'` no cuenta como inasistencia a los fines del cálculo de
+  alerta, solo `'Ausente'`. Si el instituto quiere que las justificadas
+  también sumen (aunque sea a una tasa distinta), hay que revisar
+  `calcular_porcentaje_inasistencia()`.
 
 ## 7. Calendario y Eventos
 - [ ] Definir en qué blueprint vive (¿nuevo blueprint `calendario`?)
@@ -116,3 +176,7 @@
   (restricción de UI/negocio; el DDL no lo impide).
 - Al eliminar una `Carrera` con materias asociadas, se bloquea el borrado
   en vez de hacer cascada silenciosa.
+- `UMBRAL_ALERTA_INASISTENCIA` (módulo 6) y `NOTA_MINIMA_APROBACION`
+  (módulo 5) son constantes de código, no configuración editable desde
+  la UI — decisión explícita del usuario, no agregar pantalla de
+  configuración para esto sin avisar.

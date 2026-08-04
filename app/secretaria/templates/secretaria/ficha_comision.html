@@ -12,9 +12,11 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>{{ comision.materia.nombre }} — {{ comision.ciclo_lectivo }} ({{ comision.cuatrimestre }})</h2>
-        <a href="{{ url_for('secretaria_bp.inscribir_alumno_comision', id_comision=comision.id_comision) }}"
-           class="btn btn-primary">
+        <a href="{{ url_for('secretaria_bp.inscribir_alumno_comision', id_comision=comision.id_comision) }}" class="btn btn-primary">
             Inscribir alumno
+        </a>
+        <a href="{{ url_for('secretaria_bp.cargar_notas_comision', id_comision=comision.id_comision) }}" class="btn btn-outline-primary">
+            Cargar notas
         </a>
     </div>
 

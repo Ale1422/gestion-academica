@@ -1,7 +1,7 @@
 # app/secretaria/forms.py
 
 from flask_wtf import FlaskForm
-from wtforms import SelectField, IntegerField, SubmitField, StringField
+from wtforms import SelectField, IntegerField, SubmitField, StringField, HiddenField, FieldList, FormField, DecimalField
 from wtforms.fields import DateField
 from wtforms.validators import DataRequired, NumberRange, Length, Optional, Email, ValidationError
 
@@ -128,3 +128,36 @@ class InscripcionLoteForm(FlaskForm):
     igual que en LoteComisionForm.
     """
     pass
+
+class NotaEntryForm(FlaskForm):
+    """Una fila dentro del lote de carga de notas por comisión."""
+
+    class Meta:
+        csrf = False  # el CSRF lo maneja NotasLoteForm (el form padre)
+
+    id_inscripcion = HiddenField()
+    instancia = SelectField(
+        choices=[
+            ('', '-- No cargar --'),
+            ('1er Parcial', '1er Parcial'),
+            ('2do Parcial', '2do Parcial'),
+            ('Recuperatorio', 'Recuperatorio'),
+            ('Final', 'Final'),
+            ('TP', 'TP'),
+        ],
+        validators=[Optional()],
+        render_kw={'class': 'form-control form-control-sm'}
+    )
+    valor = DecimalField(
+        'Valor', places=2, validators=[Optional(), NumberRange(min=0, max=10)],
+        render_kw={'class': 'form-control form-control-sm', 'placeholder': '0-10'}
+    )
+    fecha = DateField(
+        'Fecha', validators=[Optional()], format='%Y-%m-%d',
+        render_kw={'class': 'form-control form-control-sm'}
+    )
+
+
+class NotasLoteForm(FlaskForm):
+    entradas = FieldList(FormField(NotaEntryForm))
+    submit = SubmitField('Guardar notas', render_kw={'class': 'btn btn-primary'})

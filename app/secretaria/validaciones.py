@@ -1,6 +1,6 @@
 # app/secretaria/validaciones.py
 
-from app.secretaria.models import Alumno, Inscripcion, Comision
+from app.secretaria.models import Alumno, Inscripcion, Comision, Nota
 from app.materias.models import Correlatividad
 
 
@@ -22,6 +22,11 @@ ESTADOS_CUMPLE_PARA_FINAL = {'Aprobada'}
 # cursa materias de la carrera, y un pasivo no está habilitado hasta
 # regularizar su situación.
 ESTADOS_ACADEMICOS_HABILITADOS = {'Regular', 'Libre'}
+
+# NOTA institucional pendiente de confirmar: nota mínima para aprobar el
+# Final. Se usa 6 como default (escala 0-10) hasta que se confirme el
+# criterio real del instituto. Cambiar acá si corresponde otro valor.
+NOTA_MINIMA_APROBACION = 6
 
 
 def validar_estado_alumno(alumno):
@@ -143,3 +148,43 @@ def inscribir_alumno(id_alumno, id_comision):
     )
     inscripcion.save()
     return inscripcion
+
+def registrar_nota(id_inscripcion, instancia, valor, fecha):
+    """
+    Registra una Nota para una Inscripcion.
+
+    Si instancia == 'Final', además actualiza estado_cursada de la
+    Inscripcion: 'Aprobada' si valor >= NOTA_MINIMA_APROBACION, si no
+    'Reprobada'. Ninguna otra instancia (parciales, TP, Recuperatorio)
+    modifica el estado — el DDL no distingue qué recupera un
+    'Recuperatorio' (¿un parcial? ¿el final?), así que automatizar ahí
+    sería inventar una regla no especificada. Se deja para una decisión
+    posterior si hace falta.
+    """
+    inscripcion = Inscripcion.get_by_id(id_inscripcion)
+    if inscripcion is None:
+        raise ValidacionError('La inscripción indicada no existe.')
+
+    materia = inscripcion.comision.materia
+
+    if instancia == 'Final' and materia.modalidad_aprobacion == 'Promocional':
+        raise ValidacionError(
+            f'La materia "{materia.nombre}" es Promocional: no admite '
+            f'instancia de Final.'
+        )
+
+    nota = Nota(
+        id_inscripcion=id_inscripcion,
+        instancia=instancia,
+        valor=valor,
+        fecha=fecha,
+    )
+    db.session.add(nota)
+
+    if instancia == 'Final':
+        inscripcion.estado_cursada = (
+            'Aprobada' if valor >= NOTA_MINIMA_APROBACION else 'Reprobada'
+        )
+
+    db.session.commit()
+    return nota

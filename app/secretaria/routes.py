@@ -1,15 +1,15 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
+from datetime import date
 from app import db
 from app.secretaria import secretaria_bp
-from app.secretaria.models import Alumno, Comision, Inscripcion  # Alumno: import pendiente, ver EstadoProyecto
-from app.secretaria.forms import ComisionForm, InscripcionForm, AlumnoForm, LoteComisionForm, InscripcionLoteForm
-from app.secretaria.validaciones import inscribir_alumno, ValidacionError
+from app.secretaria.models import Alumno, Comision, Inscripcion, Nota
+from app.secretaria.forms import ComisionForm, AlumnoForm, LoteComisionForm, InscripcionLoteForm, NotasLoteForm
+from app.secretaria.validaciones import inscribir_alumno, registrar_nota, ValidacionError
 from app.auth.models import Persona
 
 from app.materias.models import Carrera, Materia, Docente 
-
 
 # --- Comisiones ---
 
@@ -310,5 +310,58 @@ def crear_comisiones_lote():
         cupo_maximo=cupo_maximo,
     )
 
-from app.secretaria.forms import InscripcionLoteForm  # sumar al import existente de forms
+# --- Notas (carga en lote por comisión) ---
+
+@secretaria_bp.route('/comision/<int:id_comision>/notas', methods=['GET', 'POST'])
+@login_required
+def cargar_notas_comision(id_comision):
+    comision = Comision.get_by_id(id_comision)
+    if comision is None:
+        flash('La comisión no existe.', 'warning')
+        return redirect(url_for('secretaria_bp.listado_comisiones'))
+
+    inscripciones = sorted(
+        comision.inscripciones,
+        key=lambda i: (i.alumno.persona.apellido, i.alumno.persona.nombre)
+    )
+
+    form = NotasLoteForm()
+
+    if request.method == 'GET':
+        form.entradas.entries = []
+        for insc in inscripciones:
+            form.entradas.append_entry({'id_inscripcion': insc.id_inscripcion})
+
+    if form.validate_on_submit():
+        cargadas = 0
+        errores = []
+        for entrada in form.entradas:
+            if not entrada.instancia.data or entrada.valor.data is None:
+                continue  # fila vacía, se ignora
+            id_insc = int(entrada.id_inscripcion.data)
+            try:
+                registrar_nota(
+                    id_inscripcion=id_insc,
+                    instancia=entrada.instancia.data,
+                    valor=entrada.valor.data,
+                    fecha=entrada.fecha.data or date.today(),
+                )
+                cargadas += 1
+            except ValidacionError as e:
+                insc = Inscripcion.get_by_id(id_insc)
+                errores.append(f'{insc.alumno.nombre_completo}: {e}')
+
+        if cargadas:
+            flash(f'{cargadas} nota(s) cargada(s) correctamente.', 'success')
+        for err in errores:
+            flash(err, 'danger')
+
+        return redirect(url_for('secretaria_bp.ficha_comision', id_comision=id_comision))
+
+    filas = list(zip(inscripciones, form.entradas))
+
+    return render_template(
+        'secretaria/notas_comision_form.html',
+        form=form, comision=comision, filas=filas
+    )
 

@@ -1,0 +1,64 @@
+{% extends "base_template.html" %}
+
+{% block title %}Cargar notas — {{ comision.materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <h3 class="mb-2">
+        Cargar notas — {{ comision.materia.nombre }} ({{ comision.ciclo_lectivo }} - {{ comision.cuatrimestre }})
+    </h3>
+    <p class="text-muted">
+        Completá instancia, valor (0 a 10) y fecha solo para los alumnos a los
+        que les querés cargar una nota; las filas vacías se ignoran. Cargar una
+        instancia <strong>Final</strong> actualiza automáticamente el estado de
+        cursada del alumno (Aprobada / Reprobada).
+    </p>
+
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Legajo</th>
+                    <th>Alumno</th>
+                    <th>Estado actual</th>
+                    <th>Instancia</th>
+                    <th>Valor</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for insc, entrada in filas %}
+                <tr>
+                    <td>{{ insc.alumno.legajo }}</td>
+                    <td>{{ insc.alumno.nombre_completo }}</td>
+                    <td><span class="badge badge-secondary">{{ insc.estado_cursada }}</span></td>
+                    <td>
+                        {{ entrada.id_inscripcion() }}
+                        {{ entrada.instancia(class="form-control form-control-sm") }}
+                    </td>
+                    <td>{{ entrada.valor(class="form-control form-control-sm", style="width: 90px;") }}</td>
+                    <td>{{ entrada.fecha(class="form-control form-control-sm", style="width: 150px;") }}</td>
+                </tr>
+                {% for error in entrada.valor.errors %}
+                <tr>
+                    <td colspan="6"><span style="color: red;">{{ insc.alumno.nombre_completo }}: {{ error }}</span></td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted">No hay alumnos inscriptos en esta comisión.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="d-flex justify-content-end">
+            {{ form.submit() }}
+        </div>
+    </form>
+</div>
+{% endblock %}

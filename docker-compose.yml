@@ -1,0 +1,49 @@
+# Define los 'servicios' o contenedores que forman tu aplicación
+services:
+  db:
+    # 1. La imagen de MySQL que queremos usar
+    image: mysql:8.0
+
+    # 2. Define las variables de entorno necesarias para MySQL
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=gestion_academica
+      - MYSQL_USER=usuario
+      - MYSQL_PASSWORD=contraseña
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Nombraremos a nuestro servicio "app" (puedes llamarlo "web", "backend", etc.)
+  app:
+    # 1. La imagen de Python que queremos usar
+    image: python:3.10
+
+    # 2. El directorio de trabajo dentro del contenedor
+    working_dir: /app
+
+    # 3. Monta tu código local dentro del contenedor
+    volumes:
+      # Monta la carpeta actual ('.') en la carpeta '/app' del contenedor
+      - .:/app
+
+    # 4. Mapea los puertos
+    ports:
+      # Expone el puerto 5000 del contenedor en el puerto 5001 de tu PC
+      - "5001:5000"
+
+    # 5. Define las variables de entorno (igual que -e)
+    environment:
+      - FLASK_APP=run.py
+      # Opcional: activa el modo debug de Flask para que se reinicie solo
+      - FLASK_ENV=development 
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # 6. El comando que se ejecuta al iniciar el contenedor
+    # (Igual que el comando 'sh -c "..." del final)
+    command: sh -c "pip install -r requirements.txt && flask run --host=0.0.0.0 --port=5000"

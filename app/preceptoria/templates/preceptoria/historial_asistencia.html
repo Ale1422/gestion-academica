@@ -1,0 +1,64 @@
+{% extends "base_template.html" %}
+
+{% block title %}Asistencia de {{ alumno.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Asistencia — {{ alumno.nombre_completo }}</h2>
+        <a href="{{ url_for('secretaria_bp.ficha_alumno', id_persona=alumno.id_persona) }}"
+           class="btn btn-outline-primary">Volver a la ficha del alumno</a>
+    </div>
+
+    {% for fila in filas %}
+    <div class="card card-body mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                {{ fila.inscripcion.comision.materia.nombre }}
+                ({{ fila.inscripcion.comision.ciclo_lectivo }} - {{ fila.inscripcion.comision.cuatrimestre }})
+            </h5>
+            {% if fila.en_riesgo %}
+                <span class="badge badge-danger">
+                    En riesgo por inasistencia ({{ (fila.porcentaje_inasistencia * 100) | round(1) }}%)
+                </span>
+            {% else %}
+                <span class="badge badge-secondary">
+                    {{ (fila.porcentaje_inasistencia * 100) | round(1) }}% de inasistencia
+                </span>
+            {% endif %}
+        </div>
+
+        {% if fila.asistencias %}
+        <table class="table table-sm mt-2 mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in fila.asistencias %}
+                <tr>
+                    <td>{{ a.fecha.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if a.estado == 'Presente' %}
+                            <span class="badge badge-success">Presente</span>
+                        {% elif a.estado == 'Ausente' %}
+                            <span class="badge badge-danger">Ausente</span>
+                        {% else %}
+                            <span class="badge badge-warning">Justificado</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted mb-0 mt-2">Todavía no hay asistencias registradas en esta cursada.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted">Este alumno no tiene inscripciones registradas.</p>
+    {% endfor %}
+</div>
+{% endblock %}

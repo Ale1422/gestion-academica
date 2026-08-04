@@ -1,0 +1,60 @@
+{% extends "base_template.html" %}
+
+{% block title %}Asistencia — {{ comision.materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Asistencia — {{ comision.materia.nombre }} ({{ comision.ciclo_lectivo }})</h2>
+        <a href="{{ url_for('preceptoria_bp.reporte_asistencia', id_comision=comision.id_comision) }}"
+           class="btn btn-outline-info">Ver reporte de inasistencias</a>
+    </div>
+
+    <form method="GET" class="form-inline mb-3">
+        <label for="fecha" class="mr-2">Fecha:</label>
+        <input type="date" id="fecha" name="fecha" class="form-control mr-2"
+               value="{{ form.fecha.data }}" onchange="this.form.submit()">
+    </form>
+
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="fecha" value="{{ form.fecha.data }}">
+
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Legajo</th>
+                    <th>Alumno</th>
+                    <th style="width: 220px;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila, insc in filas_con_alumno %}
+                <tr>
+                    <td>{{ insc.alumno.legajo }}</td>
+                    <td>{{ insc.alumno.nombre_completo }}</td>
+                    <td>
+                        {{ fila.id_inscripcion() }}
+                        {{ fila.estado(class="form-control form-control-sm") }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        No hay alumnos cursando esta comisión.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+{% endblock %}

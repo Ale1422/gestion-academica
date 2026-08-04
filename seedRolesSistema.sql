@@ -11,7 +11,7 @@
 -- en app/auth/decorators.py.
 -- ============================================================
 
-USE gestion_academica_pro;
+USE gestion_academica;
 
 -- 1. Administrador del Sistema
 -- Usado en el código como 'Administrador' (ver login() y admin_required)

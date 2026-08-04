@@ -78,16 +78,13 @@
             </li>
             <ul id="menuAlumnos" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('secretaria_bp.listado_alumnos') }}"><i class="fas fa-book"></i> Listado de Alumnos</a>
+                <a class="nav-link" href="{{ url_for('secretaria_bp.listado_alumnos') }}"><i class="fas fa-book"></i> Gestión de Alumnos</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('secretaria_bp.crear_alumno') }}"><i class="fas fa-user-plus"></i> Nuevo Alumno</a>
+                <a class="nav-link" href="{{ url_for('secretaria_bp.listado_comisiones') }}"><i class="fas fa-chart-bar"></i> Comisiones</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Calificaciones</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#"><i class="fas fa-calendar"></i> Calendario</a>
+                <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true" title="Módulo 7 — pendiente"><i class="fas fa-calendar"></i> Calendario</a>
               </li>
             </ul>
             <li class="nav-item">
@@ -120,6 +117,17 @@
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('materia_bp.listado_docentes') }}"><i class="fas fa-chalkboard-teacher"></i> Docentes</a>
+              </li>
+            </ul>
+          {% elif current_user.get_rol().upper() == "PRECEPTORA" %}
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuAsistencia" aria-expanded="false" aria-controls="menuAsistencia">
+                <i class="fas fa-clipboard-check"></i> Asistencia
+              </button>
+            </li>
+            <ul id="menuAsistencia" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('preceptoria_bp.index') }}"><i class="fas fa-list"></i> Comisiones</a>
               </li>
             </ul>
           {% endif %}

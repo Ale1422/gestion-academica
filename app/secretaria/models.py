@@ -114,6 +114,10 @@ class Inscripcion(db.Model):
 
     alumno = db.relationship('Alumno', back_populates='inscripciones')
     comision = db.relationship('Comision', back_populates='inscripciones')
+    notas = db.relationship('Nota', back_populates='inscripcion', cascade='all, delete-orphan')
+    asistencias = db.relationship(
+        'Asistencia', back_populates='inscripcion', cascade='all, delete-orphan'
+    )
 
     __table_args__ = (
         db.UniqueConstraint('id_alumno', 'id_comision', name='uq_alumno_comision'),
@@ -133,3 +137,29 @@ class Inscripcion(db.Model):
     @staticmethod
     def get_by_alumno(id_alumno):
         return Inscripcion.query.filter_by(id_alumno=id_alumno).all()
+
+class Nota(db.Model):
+    """
+    Nota registrada para una Inscripcion en una instancia evaluativa
+    puntual (parcial, recuperatorio, final, TP). Ver gestion_academica_pro.sql
+    sección 3.
+    """
+    __tablename__ = 'Notas'
+
+    id_nota = db.Column(db.Integer, primary_key=True)
+    id_inscripcion = db.Column(db.Integer, db.ForeignKey('Inscripciones.id_inscripcion'), nullable=False)
+    instancia = db.Column(
+        db.Enum('1er Parcial', '2do Parcial', 'Recuperatorio', 'Final', 'TP'),
+        nullable=False
+    )
+    valor = db.Column(db.Numeric(4, 2), nullable=False)
+    fecha = db.Column(db.Date, nullable=False)
+
+    inscripcion = db.relationship('Inscripcion', back_populates='notas')
+
+    def __repr__(self):
+        return f'<Nota inscripcion={self.id_inscripcion} {self.instancia}={self.valor}>'
+
+    @staticmethod
+    def get_by_inscripcion(id_inscripcion):
+        return Nota.query.filter_by(id_inscripcion=id_inscripcion).order_by(Nota.fecha).all()

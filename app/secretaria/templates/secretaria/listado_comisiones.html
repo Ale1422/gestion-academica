@@ -40,7 +40,9 @@
                 <td>{{ comision.cupos_disponibles }} / {{ comision.cupo_maximo }}</td>
                 <td class="text-right">
                     <a href="{{ url_for('secretaria_bp.ficha_comision', id_comision=comision.id_comision) }}"
-                       class="btn btn-sm btn-outline-secondary">Ver</a>
+                    class="btn btn-sm btn-outline-secondary">Ver</a>
+                    <a href="{{ url_for('secretaria_bp.cargar_notas_comision', id_comision=comision.id_comision) }}"
+                    class="btn btn-sm btn-outline-primary">Notas</a>
                 </td>
             </tr>
             {% else %}
