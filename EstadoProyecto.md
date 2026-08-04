@@ -96,11 +96,22 @@ del instituto):**
       `app/secretaria/models.py` (cascade='all, delete-orphan', mismo
       patrón que `notas`)
 - [x] `Asistencia.registrar()`: upsert por `(id_inscripcion, fecha)` a
-      nivel aplicación — el DDL de referencia no tiene
-      `UNIQUE(id_inscripcion, fecha)`, así que la app es la que garantiza
-      no duplicar el registro del mismo alumno el mismo día. **Pendiente
-      no bloqueante:** si se quiere blindar esto en la base, agregar esa
-      constraint al DDL con una migración aparte.
+      nivel aplicación — sigue siendo la vía correcta para cargar/editar
+      asistencia (no dispara error de duplicado, actualiza el registro
+      existente).
+- [x] `UNIQUE(id_inscripcion, fecha)` agregado a la tabla `Asistencias`
+      (constraint `uq_inscripcion_fecha`), tanto en el DDL de referencia
+      (`ModeloDatos.sql`) como en `__table_args__` del modelo
+      `Asistencia`. Blinda a nivel base lo que antes solo garantizaba la
+      aplicación. **Aplicado directamente por SQL** (`ALTER TABLE
+      Asistencias ADD CONSTRAINT uq_inscripcion_fecha UNIQUE
+      (id_inscripcion, fecha)`) sobre la base ya existente, previa
+      limpieza de duplicados si los había. **Pendiente no bloqueante:**
+      generar igual la migración correspondiente con `flask db migrate`
+      (revisando que el `upgrade()` sea consistente con lo ya aplicado a
+      mano) para que el historial de Alembic no quede desincronizado del
+      estado real de la base de cara al resto del equipo o a un deploy
+      nuevo.
 - [x] Formularios: `AsistenciaFilaForm`, `AsistenciaLoteForm`
       (app/preceptoria/forms.py, archivo nuevo) — mismo patrón de
       FieldList/FormField que `NotasLoteForm` del módulo 5
@@ -155,7 +166,7 @@ del instituto):**
 - `Usuario.estado` es Boolean, no Enum de texto.
 - Patrón Persona → Usuario/Alumno/Docente: siempre se crea la Persona
   primero (commit), después el registro dependiente.
-- Fuente de verdad del esquema: `gestion_academica_pro.sql`. Los scripts
+- Fuente de verdad del esquema: `ModeloDatos.sql`. Los scripts
   SQL viejos (`Generar Base de datos V2.sql` y `V2 GEMINI.sql`) quedaron
   descartados.
 - `Materias.carga_horaria_total`: se deja como está en el DDL, sin
@@ -180,3 +191,8 @@ del instituto):**
   (módulo 5) son constantes de código, no configuración editable desde
   la UI — decisión explícita del usuario, no agregar pantalla de
   configuración para esto sin avisar.
+- `Asistencias` tiene `UNIQUE(id_inscripcion, fecha)` (constraint
+  `uq_inscripcion_fecha`), tanto en el DDL como en el modelo. Cualquier
+  alta directa de `Asistencia` (fuera de `Asistencia.registrar()`) debe
+  contemplar que puede fallar por duplicado — usar siempre
+  `Asistencia.registrar()` para cargar o editar.

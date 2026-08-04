@@ -152,6 +152,7 @@ CREATE TABLE Asistencias (
     fecha DATE NOT NULL,
     estado ENUM('Presente', 'Ausente', 'Justificado') NOT NULL,
     FOREIGN KEY (id_inscripcion) REFERENCES Inscripciones(id_inscripcion) ON DELETE CASCADE
+    UNIQUE (id_inscripcion, fecha) 
 );
  
 -- ==========================================

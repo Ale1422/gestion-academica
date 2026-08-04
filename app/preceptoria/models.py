@@ -16,6 +16,10 @@ class Asistencia(db.Model):
 
     inscripcion = db.relationship('Inscripcion', back_populates='asistencias')
 
+    __table_args__ = (
+        db.UniqueConstraint('id_inscripcion', 'fecha', name='uq_inscripcion_fecha'),
+    )
+
     def __repr__(self):
         return f'<Asistencia inscripcion={self.id_inscripcion} {self.fecha} {self.estado}>'
 
