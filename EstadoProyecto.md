@@ -68,26 +68,33 @@
       el lote si alguno falla por cupo o correlatividades.
 
 ## 5. Notas — CERRADO
-- [x] Modelo: `Nota` (app/secretaria/models.py) + relación `Inscripcion.notas`
-- [x] Formularios: `NotaEntryForm`, `NotasLoteForm` (app/secretaria/forms.py)
-- [x] Ruta: carga de notas en lote por comisión (`/comision/<id>/notas`),
-      tabla con una fila por alumno inscripto (instancia + valor + fecha),
-      filas vacías se ignoran, no frena el lote si una fila falla validación
-- [x] Historial académico real en `alumno_ficha.html` (antes era un
-      placeholder): tabla de inscripciones con estado y notas
-- [x] `registrar_nota()` en validaciones.py: al cargar instancia 'Final'
-      actualiza automáticamente `estado_cursada` (Aprobada/Reprobada) y
-      bloquea Final en materias `modalidad_aprobacion='Promocional'`
-      (cierra pendiente del módulo 2)
-
-**Decisión pendiente de confirmar (no cerrada, revisar con el usuario real
-del instituto):**
-- `NOTA_MINIMA_APROBACION = 6` en `validaciones.py` es un default asumido,
-  no un dato confirmado por el instituto. Ajustar ahí si corresponde otro
-  valor.
-- Solo la instancia `Final` dispara cambio automático de `estado_cursada`.
-  `Recuperatorio` no automatiza nada porque el DDL no distingue si recupera
-  un parcial o el final — si hace falta, hay que definir esa regla primero.
+- [x] Todo lo ya cerrado (ver historial de este archivo)
+- [x] **Ajuste por módulo 7 (opción A), aplicado:** el final de una
+      materia se rinde SIEMPRE a través de una `MesaExamen` (módulo 7 —
+      Calendario), nunca como una `Nota` suelta con `instancia='Final'`
+- [x] `NotaEntryForm`: sacado `'Final'` de las `choices` de `instancia`
+      (quedan `'1er Parcial'`, `'2do Parcial'`, `'Recuperatorio'`, `'TP'`)
+- [x] `registrar_nota()`: sacada la rama que actualizaba `estado_cursada`
+      cuando `instancia == 'Final'`; ahora **rechaza explícitamente**
+      `instancia='Final'` con `ValidacionError` en vez de aceptarla sin
+      efecto, para no reabrir una segunda vía silenciosa de aprobar un
+      final por fuera de las mesas
+- [x] Decisión tomada: el `ENUM` de `Notas.instancia` en el DDL **no se
+      tocó** (se deja `'Final'` ahí por compatibilidad con datos
+      históricos ya cargados); el cambio fue solo en las choices del
+      formulario y en `registrar_nota()`, no en el esquema — no
+      requirió migración
+- [x] **Bug preexistente corregido de paso:** `validaciones.py` usaba
+      `db.session.add()` / `db.session.commit()` en `registrar_nota()`
+      sin importar `db` (`from app import db` faltaba) — probablemente
+      rompía con `NameError` en cualquier alta de nota. Agregado el
+      import. **Pendiente de que el usuario confirme a mano** que la
+      carga de notas funciona ahora sin errores ocultos detrás de ese bug.
+**Punto abierto, no bloqueante:**
+- `NOTA_MINIMA_APROBACION = 6` quedó definida en `validaciones.py` pero,
+  tras sacar la rama de `'Final'`, ya no la usa nada en ese archivo.
+  Revisar si conviene eliminarla o si se va a reusar para alguna regla
+  de `Recuperatorio` a futuro.
 
 ## 6. Asistencia (Preceptoria) — CERRADO
 - [x] Modelo: `Asistencia` (app/preceptoria/models.py, blueprint y archivo
@@ -146,12 +153,62 @@ del instituto):**
   también sumen (aunque sea a una tasa distinta), hay que revisar
   `calcular_porcentaje_inasistencia()`.
 
-## 7. Calendario y Eventos
-- [ ] Definir en qué blueprint vive (¿nuevo blueprint `calendario`?)
-- [ ] Modelos: `Evento`, `MesaExamen`, `InscripcionMesa`
-- [ ] Rutas: programar eventos/mesas, inscripción de alumnos a mesas
-- [ ] Restringir alta de `MesaExamen` a materias con `modalidad_aprobacion`
-      en `'Final'` o `'Ambas'` (una materia `'Promocional'` no tiene final)
+## 7. Calendario y Eventos — CERRADO
+- [x] Blueprint nuevo `calendario_bp` (app/calendario/__init__.py,
+      routes.py, models.py, forms.py, validaciones.py,
+      templates/calendario/*.html)
+- [x] Modelos: `Evento`, `MesaExamen`, `InscripcionMesa`
+      (app/calendario/models.py) — mapean las tablas ya existentes en el
+      DDL (`ModeloDatos.sql`, sección 4), que estaban sin usar
+- [x] Relaciones cruzadas agregadas: `Materia.mesas_examen`
+      (app/materias/models.py) y `Alumno.inscripciones_mesa`
+      (app/secretaria/models.py), mismo patrón que `Materia.comisiones` /
+      `Alumno.inscripciones`
+- [x] Alta de Mesa de Examen: un solo formulario crea el `Evento`
+      (`tipo='Examen'`) y la `MesaExamen` juntos, mismo patrón
+      Persona→Alumno (flush intermedio, misma transacción)
+- [x] Eventos genéricos (Evento Académico, Feriado, Inscripciones):
+      alta/edición/listado/baja independientes de las mesas
+- [x] Validado: `validar_materia_habilitada_para_mesa()` bloquea mesas de
+      examen sobre materias `modalidad_aprobacion='Promocional'` (cierra
+      el pendiente anotado en el módulo 2)
+- [x] Inscripción a mesa: `validar_cursada_habilita_final()` (la cursada
+      de ESA materia debe estar Regular/Promocionado/Aprobada) +
+      `validar_correlatividades_para_rendir_final()` (tipo_requisito
+      'Para Rendir Final' de otras materias)
+- [x] Límite de intentos para rendir final: `MAX_INTENTOS_FINAL = 3`
+      (constante de módulo, mismo criterio que `NOTA_MINIMA_APROBACION`
+      del módulo 5 y `UMBRAL_ALERTA_INASISTENCIA` del módulo 6 — no
+      editable desde la UI). Cuenta como intento consumido
+      `'Desaprobado'` y `'Ausente'` (`ESTADOS_CONSUMEN_INTENTO`) — **ver
+      nota de decisión pendiente más abajo**
+- [x] `registrar_resultado_mesa()`: si el resultado es `'Aprobado'`,
+      actualiza `Inscripcion.estado_cursada` a `'Aprobada'`. Si es
+      `'Desaprobado'` o `'Ausente'`, **no toca** `estado_cursada` (el
+      alumno sigue `'Regular'` y puede volver a inscribirse mientras no
+      agote los 3 intentos) — confirmado con el usuario real del
+      instituto
+- [x] Inscripción a mesa en lote (checkboxes + buscador), mismo patrón
+      que la inscripción a Comisión del módulo 4
+- [x] Carga de resultados en lote por mesa (una fila por alumno
+      inscripto, resultado + nota), mismo patrón que la carga de notas
+      del módulo 5
+- [x] Templates: index (próximos eventos), evento_form, listado_eventos,
+      mesa_form, listado_mesas, ficha_mesa, inscripcion_mesa_lote,
+      resultados_mesa_lote
+- [x] Sidebar en `base_template.html`: submenú "Calendario" para
+      `SECRETARIA` (acceso completo — crear eventos, crear mesas,
+      inscribir, cargar resultados) y para `PRECEPTORA` (acceso de
+      consulta — solo "Próximos eventos" y "Mesas de examen", sin links
+      de alta/edición; **el control real de acceso sigue pendiente del
+      punto abierto en el módulo 1**, esto solo esconde los links)
+**Decisión pendiente de confirmar (no cerrada, revisar con el usuario real
+del instituto):**
+- `ESTADOS_CONSUMEN_INTENTO = {'Desaprobado', 'Ausente'}` en
+  `calendario/validaciones.py` es un supuesto: que faltar a una mesa
+  (`'Ausente'`) consume uno de los 3 intentos igual que desaprobarla. Si
+  el instituto quiere que una ausencia NO cuente como intento rendido,
+  hay que sacar `'Ausente'` de ese set.
 
 ## 8. Docentes
 - [x] Modelo: `Docente` (app/materias/models.py)
@@ -196,3 +253,14 @@ del instituto):**
   alta directa de `Asistencia` (fuera de `Asistencia.registrar()`) debe
   contemplar que puede fallar por duplicado — usar siempre
   `Asistencia.registrar()` para cargar o editar.
+- Un final SIEMPRE se rinde a través de una `MesaExamen` (módulo 7) — el
+  módulo de Notas (5) no admite más instancia `'Final'` suelta. Ver
+  ajuste pendiente anotado arriba en el punto 5.
+- Un alumno desaprobado en un final sigue `'Regular'` (no cambia su
+  `estado_cursada`) y puede volver a inscribirse a otra mesa, hasta un
+  máximo de 3 intentos totales por materia (`MAX_INTENTOS_FINAL`).
+- Una materia `modalidad_aprobacion='Promocional'` (pura) no puede tener
+  Mesas de Examen asociadas — no tiene instancia de final.
+- `MAX_INTENTOS_FINAL` (módulo 7) es constante de código, mismo criterio
+  que `NOTA_MINIMA_APROBACION` (módulo 5) y `UMBRAL_ALERTA_INASISTENCIA`
+  (módulo 6) — no editable desde la UI sin avisar.

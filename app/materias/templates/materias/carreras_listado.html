@@ -43,7 +43,7 @@
                 </td>
                 <td class="text-end">
                     <a href="{{ url_for('materia_bp.editar_carrera', id_carrera=carrera.id_carrera) }}"
-                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                       class="btn btn-sm btn-outline-info">Editar</a>
                     <form action="{{ url_for('materia_bp.eliminar_carrera', id_carrera=carrera.id_carrera) }}"
                           method="POST" class="d-inline"
                           onsubmit="return confirm('¿Eliminar la carrera {{ carrera.nombre }}?');">

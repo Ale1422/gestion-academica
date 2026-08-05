@@ -97,6 +97,7 @@ class Materia(db.Model):
 
     carrera = db.relationship('Carrera', back_populates='materias')
     comisiones = db.relationship('Comision', back_populates='materia')
+    mesas_examen = db.relationship('MesaExamen', back_populates='materia')
 
     # Correlatividades donde ESTA materia es la que exige el requisito
     # (ej. "Programación II" requiere "Programación I")

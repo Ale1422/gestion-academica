@@ -44,9 +44,9 @@
                 <td>{{ docente.especialidad or '-' }}</td>
                 <td class="text-right">
                     <a href="{{ url_for('materia_bp.ficha_docente', id_persona=docente.id_persona) }}"
-                       class="btn btn-sm btn-outline-info">Ficha</a>
+                       class="btn btn-sm btn-outline-primary">Ficha</a>
                     <a href="{{ url_for('materia_bp.editar_docente', id_persona=docente.id_persona) }}"
-                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                       class="btn btn-sm btn-outline-info">Editar</a>
                 </td>
             </tr>
             {% else %}

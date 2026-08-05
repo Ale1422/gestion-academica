@@ -8,7 +8,7 @@
         <h2>{{ alumno.nombre_completo }}</h2>
         <div>
             <a href="{{ url_for('secretaria_bp.editar_alumno', id_persona=alumno.id_persona) }}"
-               class="btn btn-outline-secondary">Editar</a>
+               class="btn btn-outline-info">Editar</a>
             <a href="{{ url_for('secretaria_bp.listado_alumnos') }}"
                class="btn btn-outline-primary">Volver al listado</a>
         </div>

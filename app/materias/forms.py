@@ -36,7 +36,7 @@ class MateriaForm(FlaskForm):
         'Carrera',
         coerce=int,
         validators=[DataRequired()],
-        render_kw={'class': 'form-select'},
+        render_kw={'class': 'form-control'},
     )
     anio_sugerido = IntegerField(
         'Año sugerido',
@@ -46,7 +46,7 @@ class MateriaForm(FlaskForm):
     tipo_dictado = SelectField(
         'Tipo de dictado',
         choices=[('Cuatrimestral', 'Cuatrimestral'), ('Anual', 'Anual')],
-        render_kw={'class': 'form-select'},
+        render_kw={'class': 'form-control'},
     )
     carga_horaria_total = IntegerField(
         'Carga horaria total',
@@ -61,7 +61,7 @@ class MateriaForm(FlaskForm):
             ('Ambas', 'Ambas'),
         ],
         validators=[DataRequired()],
-        render_kw={'class': 'form-select'},
+        render_kw={'class': 'form-control'},
     )
     submit = SubmitField('Guardar', render_kw={'class': 'btn btn-primary'})
 
@@ -77,7 +77,7 @@ class CorrelatividadForm(FlaskForm):
         'Materia requerida',
         coerce=int,
         validators=[DataRequired()],
-        render_kw={'class': 'form-select'},
+        render_kw={'class': 'form-control'},
     )
     tipo_requisito = SelectField(
         'Requisito',
@@ -86,7 +86,7 @@ class CorrelatividadForm(FlaskForm):
             ('Para Rendir Final', 'Para Rendir Final'),
         ],
         validators=[DataRequired()],
-        render_kw={'class': 'form-select'},
+        render_kw={'class': 'form-control'},
     )
     submit = SubmitField('Agregar correlatividad', render_kw={'class': 'btn btn-primary'})
 

@@ -1,0 +1,48 @@
+{% extends "base_template.html" %}
+
+{% block title %}Mesas de examen{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Mesas de examen</h2>
+        <a href="{{ url_for('calendario_bp.crear_mesa') }}" class="btn btn-primary">Nueva mesa</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Materia</th>
+                <th>Llamado</th>
+                <th>Fecha</th>
+                <th>Inscriptos</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mesa in mesas %}
+            <tr>
+                <td>{{ mesa.materia.nombre }}</td>
+                <td>{{ mesa.llamado }}</td>
+                <td>{{ mesa.evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ mesa.inscripciones|length }}</td>
+                <td class="text-right">
+                    <a href="{{ url_for('calendario_bp.ficha_mesa', id_mesa=mesa.id_mesa) }}"
+                       class="btn btn-sm btn-outline-info">Ver</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">No hay mesas de examen cargadas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

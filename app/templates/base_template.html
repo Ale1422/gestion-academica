@@ -83,9 +83,6 @@
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('secretaria_bp.listado_comisiones') }}"><i class="fas fa-chart-bar"></i> Comisiones</a>
               </li>
-              <li class="nav-item">
-                <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true" title="Módulo 7 — pendiente"><i class="fas fa-calendar"></i> Calendario</a>
-              </li>
             </ul>
             <li class="nav-item">
               <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuComisiones" aria-expanded="false" aria-controls="menuComisiones">
@@ -105,7 +102,7 @@
             </ul>
             <li class="nav-item">
               <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuMateria" aria-expanded="false" aria-controls="menuMateria">
-                <i class="fas fa-book"></i> Materias
+                <i class="fas fa-book"></i> Gestion Carreras
               </button>
             </li>
             <ul id="menuMateria" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
@@ -119,6 +116,22 @@
                 <a class="nav-link" href="{{ url_for('materia_bp.listado_docentes') }}"><i class="fas fa-chalkboard-teacher"></i> Docentes</a>
               </li>
             </ul>
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuCalendario" aria-expanded="false" aria-controls="menuCalendario">
+                <i class="fas fa-calendar"></i> Calendario
+              </button>
+            </li>
+            <ul id="menuCalendario" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendario_bp.index') }}"><i class="fas fa-calendar-day"></i> Próximos eventos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendario_bp.listado_eventos') }}"><i class="fas fa-list"></i> Eventos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendario_bp.listado_mesas') }}"><i class="fas fa-chalkboard-teacher"></i> Mesas de examen</a>
+              </li>
+            </ul>
           {% elif current_user.get_rol().upper() == "PRECEPTORA" %}
             <li class="nav-item">
               <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuAsistencia" aria-expanded="false" aria-controls="menuAsistencia">
@@ -128,6 +141,19 @@
             <ul id="menuAsistencia" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('preceptoria_bp.index') }}"><i class="fas fa-list"></i> Comisiones</a>
+              </li>
+            </ul>
+            <li class="nav-item">
+              <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#menuCalendarioPreceptora" aria-expanded="false" aria-controls="menuCalendarioPreceptora">
+                <i class="fas fa-calendar"></i> Calendario
+              </button>
+            </li>
+            <ul id="menuCalendarioPreceptora" class="collapse" aria-labelledby="headingOne" data-parent="#menuColapsable">
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendario_bp.index') }}"><i class="fas fa-calendar-day"></i> Próximos eventos</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendario_bp.listado_mesas') }}"><i class="fas fa-chalkboard-teacher"></i> Mesas de examen</a>
               </li>
             </ul>
           {% endif %}

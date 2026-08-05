@@ -1,0 +1,55 @@
+{% extends "base_template.html" %}
+
+{% block title %}Mesa — {{ mesa.materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ mesa.materia.nombre }} — {{ mesa.llamado }}</h2>
+        <div>
+            <a href="{{ url_for('calendario_bp.inscribir_alumnos_mesa', id_mesa=mesa.id_mesa) }}"
+               class="btn btn-primary">Inscribir alumnos</a>
+            <a href="{{ url_for('calendario_bp.resultados_mesa', id_mesa=mesa.id_mesa) }}"
+               class="btn btn-outline-primary">Cargar resultados</a>
+        </div>
+    </div>
+
+    <p>
+        <strong>Fecha:</strong> {{ mesa.evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}
+        a {{ mesa.evento.fecha_fin.strftime('%H:%M') }}<br>
+        {% if mesa.evento.descripcion %}<strong>Detalle:</strong> {{ mesa.evento.descripcion }}<br>{% endif %}
+    </p>
+
+    <h4 class="mt-4">Alumnos inscriptos</h4>
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Legajo</th>
+                <th>Alumno</th>
+                <th>Resultado</th>
+                <th>Nota</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inscripcion in mesa.inscripciones %}
+            <tr>
+                <td>{{ inscripcion.alumno.legajo }}</td>
+                <td>{{ inscripcion.alumno.nombre_completo }}</td>
+                <td><span class="badge badge-secondary">{{ inscripcion.resultado }}</span></td>
+                <td>{{ inscripcion.nota_final if inscripcion.nota_final is not none else '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">Todavía no hay alumnos inscriptos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base_template.html" %}
+
+{% block title %}Calendario{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Próximos eventos</h2>
+        <div>
+            <a href="{{ url_for('calendario_bp.crear_evento') }}" class="btn btn-outline-primary">Nuevo evento</a>
+            <a href="{{ url_for('calendario_bp.crear_mesa') }}" class="btn btn-primary">Nueva mesa de examen</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for evento in eventos %}
+            <tr>
+                <td>{{ evento.nombre }}</td>
+                <td><span class="badge badge-secondary">{{ evento.tipo }}</span></td>
+                <td>{{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ evento.fecha_fin.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td class="text-right">
+                    {% if evento.tipo == 'Examen' %}
+                    <a href="{{ url_for('calendario_bp.ficha_mesa', id_mesa=evento.mesa_examen.id_mesa) }}"
+                       class="btn btn-sm btn-outline-primary">Ver mesa</a>
+                    {% else %}
+                    <a href="{{ url_for('calendario_bp.editar_evento', id_evento=evento.id_evento) }}"
+                       class="btn btn-sm btn-outline-info">Editar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">No hay eventos próximos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

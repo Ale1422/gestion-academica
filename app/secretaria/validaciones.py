@@ -1,5 +1,6 @@
 # app/secretaria/validaciones.py
 
+from app import db
 from app.secretaria.models import Alumno, Inscripcion, Comision, Nota
 from app.materias.models import Correlatividad
 
@@ -151,27 +152,18 @@ def inscribir_alumno(id_alumno, id_comision):
 
 def registrar_nota(id_inscripcion, instancia, valor, fecha):
     """
-    Registra una Nota para una Inscripcion.
-
-    Si instancia == 'Final', además actualiza estado_cursada de la
-    Inscripcion: 'Aprobada' si valor >= NOTA_MINIMA_APROBACION, si no
-    'Reprobada'. Ninguna otra instancia (parciales, TP, Recuperatorio)
-    modifica el estado — el DDL no distingue qué recupera un
-    'Recuperatorio' (¿un parcial? ¿el final?), así que automatizar ahí
-    sería inventar una regla no especificada. Se deja para una decisión
-    posterior si hace falta.
+    Registra una Nota para una Inscripcion (parciales, recuperatorios, TP).
+    
     """
+    if instancia == 'Final':
+        raise ValidacionError(
+            'El Final no se carga como Nota: debe registrarse a través '
+            'de una Mesa de Examen (módulo Calendario).'
+        )
+
     inscripcion = Inscripcion.get_by_id(id_inscripcion)
     if inscripcion is None:
         raise ValidacionError('La inscripción indicada no existe.')
-
-    materia = inscripcion.comision.materia
-
-    if instancia == 'Final' and materia.modalidad_aprobacion == 'Promocional':
-        raise ValidacionError(
-            f'La materia "{materia.nombre}" es Promocional: no admite '
-            f'instancia de Final.'
-        )
 
     nota = Nota(
         id_inscripcion=id_inscripcion,
@@ -180,11 +172,5 @@ def registrar_nota(id_inscripcion, instancia, valor, fecha):
         fecha=fecha,
     )
     db.session.add(nota)
-
-    if instancia == 'Final':
-        inscripcion.estado_cursada = (
-            'Aprobada' if valor >= NOTA_MINIMA_APROBACION else 'Reprobada'
-        )
-
     db.session.commit()
     return nota

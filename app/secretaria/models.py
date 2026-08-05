@@ -19,6 +19,7 @@ class Alumno(db.Model):
 
     persona = db.relationship('Persona', back_populates='alumno')
     inscripciones = db.relationship('Inscripcion', back_populates='alumno')
+    inscripciones_mesa = db.relationship('InscripcionMesa', back_populates='alumno')
 
     def __repr__(self):
         return f'<Alumno legajo={self.legajo}>'

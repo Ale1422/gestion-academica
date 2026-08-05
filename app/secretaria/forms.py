@@ -142,7 +142,6 @@ class NotaEntryForm(FlaskForm):
             ('1er Parcial', '1er Parcial'),
             ('2do Parcial', '2do Parcial'),
             ('Recuperatorio', 'Recuperatorio'),
-            ('Final', 'Final'),
             ('TP', 'TP'),
         ],
         validators=[Optional()],

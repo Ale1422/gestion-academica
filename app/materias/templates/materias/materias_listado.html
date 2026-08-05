@@ -54,9 +54,9 @@
                 </td>
                 <td class="text-right">
                     <a href="{{ url_for('materia_bp.correlatividades', id_materia=materia.id_materia) }}"
-                       class="btn btn-sm btn-outline-info">Correlatividades</a>
+                       class="btn btn-sm btn-outline-primary">Correlatividades</a>
                     <a href="{{ url_for('materia_bp.editar_materia', id_materia=materia.id_materia) }}"
-                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                       class="btn btn-sm btn-outline-info">Editar</a>
                     <form action="{{ url_for('materia_bp.eliminar_materia', id_materia=materia.id_materia) }}"
                           method="POST" class="d-inline"
                           onsubmit="return confirm('¿Eliminar la materia {{ materia.nombre }}?');">

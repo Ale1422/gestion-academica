@@ -41,5 +41,8 @@ def create_app():
     from .materias import materia_bp
     app.register_blueprint(materia_bp, url_prefix = '/materias')
 
+    from .calendario import calendario_bp
+    app.register_blueprint(calendario_bp)
+
 
     return app

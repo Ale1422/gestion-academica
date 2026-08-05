@@ -50,9 +50,9 @@
                 <td><span class="badge bg-secondary">{{ alumno.estado_academico }}</span></td>
                 <td class="text-right">
                     <a href="{{ url_for('secretaria_bp.ficha_alumno', id_persona=alumno.id_persona) }}"
-                       class="btn btn-sm btn-outline-info">Ficha</a>
+                       class="btn btn-sm btn-outline-primary">Ficha</a>
                     <a href="{{ url_for('secretaria_bp.editar_alumno', id_persona=alumno.id_persona) }}"
-                       class="btn btn-sm btn-outline-secondary">Editar</a>
+                       class="btn btn-sm btn-outline-info">Editar</a>
                 </td>
             </tr>
             {% else %}

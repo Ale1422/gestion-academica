@@ -8,7 +8,7 @@
         <h2>{{ docente.nombre_completo }}</h2>
         <div>
             <a href="{{ url_for('materia_bp.editar_docente', id_persona=docente.id_persona) }}"
-               class="btn btn-outline-secondary">Editar</a>
+               class="btn btn-outline-info">Editar</a>
             <a href="{{ url_for('materia_bp.listado_docentes') }}"
                class="btn btn-outline-primary">Volver al listado</a>
         </div>
