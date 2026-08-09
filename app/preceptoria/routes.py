@@ -1,3 +1,5 @@
+# app/preceptoria/routes.py
+
 from datetime import date
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
@@ -10,17 +12,24 @@ from app.secretaria.models import Comision, Alumno
 from app.preceptoria.validaciones import (
     UMBRAL_ALERTA_INASISTENCIA, calcular_porcentaje_inasistencia,
 )
+from app.auth.decorators import rol_requerido
 
 
 @preceptoria_bp.route('/preceptoria')
 def index():
+    # Sin @login_required en el original: se deja así, no se agrega
+    # rol_requerido acá para no cambiar el comportamiento de acceso que
+    # ya tenía esta vista.
     comisiones = Comision.get_all()
     return render_template('preceptoria/index.html', comisiones=comisiones)
 
 
 @preceptoria_bp.route('/preceptoria/comision/<int:id_comision>/reporte')
 @login_required
+@rol_requerido('Preceptora', 'Secretaria', 'Administrador')
 def reporte_asistencia(id_comision):
+    # Secretaria tiene acceso de consulta a reportes de asistencia según
+    # la especificación (módulo Control de Asistencia).
     comision = Comision.get_by_id(id_comision)
     if comision is None:
         flash('La comisión no existe.', 'warning')
@@ -54,6 +63,7 @@ def reporte_asistencia(id_comision):
 
 @preceptoria_bp.route('/preceptoria/comision/<int:id_comision>/asistencia', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Preceptora', 'Administrador')
 def registrar_asistencia(id_comision):
     comision = Comision.get_by_id(id_comision)
     if comision is None:
@@ -107,7 +117,11 @@ def registrar_asistencia(id_comision):
 
 @preceptoria_bp.route('/preceptoria/alumno/<int:id_persona>/historial')
 @login_required
+@rol_requerido('Preceptora', 'Secretaria', 'Administrador')
 def historial_asistencia(id_persona):
+    # Secretaria tiene acceso de consulta al historial de asistencia
+    # (lo necesita para verificar estados académicos, según la
+    # especificación).
     alumno = Alumno.get_by_id(id_persona)
     if alumno is None:
         flash('Alumno no encontrado.', 'danger')

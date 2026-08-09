@@ -1,4 +1,4 @@
-from datetime import datetime
+# app/calendario/routes.py
 
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
@@ -17,6 +17,8 @@ from app.secretaria.models import Alumno
 from app.materias.models import Materia
 from app.auth.models import Persona
 
+from app.auth.decorators import rol_requerido
+
 
 @calendario_bp.route('/calendario')
 def index():
@@ -28,6 +30,7 @@ def index():
 
 @calendario_bp.route('/calendario/evento/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def crear_evento():
     form = EventoForm()
     if form.validate_on_submit():
@@ -46,6 +49,7 @@ def crear_evento():
 
 @calendario_bp.route('/calendario/evento/editar/<int:id_evento>', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def editar_evento(id_evento):
     evento = Evento.get_by_id(id_evento)
     if evento is None or evento.tipo == 'Examen':
@@ -72,6 +76,7 @@ def editar_evento(id_evento):
 
 @calendario_bp.route('/calendario/evento/listado')
 @login_required
+@rol_requerido('Secretaria', 'Preceptora', 'Administrador')
 def listado_eventos():
     tipo_filtro = request.args.get('tipo', '')
     query = Evento.query
@@ -86,6 +91,7 @@ def listado_eventos():
 
 @calendario_bp.route('/calendario/evento/eliminar/<int:id_evento>', methods=['POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def eliminar_evento(id_evento):
     evento = Evento.get_by_id(id_evento)
     if evento is None:
@@ -101,6 +107,7 @@ def eliminar_evento(id_evento):
 
 @calendario_bp.route('/calendario/mesa/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def crear_mesa():
     form = MesaExamenForm()
     if form.validate_on_submit():
@@ -144,6 +151,7 @@ def crear_mesa():
 
 @calendario_bp.route('/calendario/mesa/listado')
 @login_required
+@rol_requerido('Secretaria', 'Preceptora', 'Administrador')
 def listado_mesas():
     mesas = MesaExamen.get_all()
     return render_template('calendario/listado_mesas.html', mesas=mesas)
@@ -151,6 +159,7 @@ def listado_mesas():
 
 @calendario_bp.route('/calendario/mesa/<int:id_mesa>')
 @login_required
+@rol_requerido('Secretaria', 'Preceptora', 'Administrador')
 def ficha_mesa(id_mesa):
     mesa = MesaExamen.get_by_id(id_mesa)
     if mesa is None:
@@ -161,6 +170,7 @@ def ficha_mesa(id_mesa):
 
 @calendario_bp.route('/calendario/mesa/<int:id_mesa>/inscribir', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def inscribir_alumnos_mesa(id_mesa):
     mesa = MesaExamen.get_by_id(id_mesa)
     if mesa is None:
@@ -220,6 +230,7 @@ def inscribir_alumnos_mesa(id_mesa):
 
 @calendario_bp.route('/calendario/mesa/<int:id_mesa>/resultados', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def resultados_mesa(id_mesa):
     mesa = MesaExamen.get_by_id(id_mesa)
     if mesa is None:

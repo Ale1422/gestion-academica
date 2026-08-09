@@ -47,7 +47,7 @@
 - [x] Formulario: `AlumnoForm` (app/secretaria/forms.py, archivo nuevo)
 - [x] Rutas: crear, editar, listado (con búsqueda y filtro por estado), ficha
 - [x] Templates: alumno_form, alumno_listado, alumno_ficha
-- [ ] Decisión tomada: alta de Alumno NO crea Usuario/login — es solo
+- [x] Decisión tomada: alta de Alumno NO crea Usuario/login — es solo
       registro académico gestionado por la Secretaria (revisar si en el
       futuro se agrega portal de autogestión para alumnos)
 
@@ -214,7 +214,7 @@ del instituto):**
 - [x] Modelo: `Docente` (app/materias/models.py)
 - [x] Import de `Docente` en `materias/routes.py` (resuelto de paso al
       construir el módulo de Carreras y Materias, que ya lo necesitaba)
-- [ ] Rutas y templates propios de Docentes (alta/listado/ficha)
+- [x] Rutas y templates propios de Docentes (alta/listado/ficha)
 
 ---
 

@@ -1,3 +1,5 @@
+# app/secretaria/routes.py
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
@@ -8,17 +10,22 @@ from app.secretaria.models import Alumno, Comision, Inscripcion, Nota
 from app.secretaria.forms import ComisionForm, AlumnoForm, LoteComisionForm, InscripcionLoteForm, NotasLoteForm
 from app.secretaria.validaciones import inscribir_alumno, registrar_nota, ValidacionError
 from app.auth.models import Persona
+from app.auth.decorators import rol_requerido
 
-from app.materias.models import Carrera, Materia, Docente 
+from app.materias.models import Carrera, Materia, Docente
 
 # --- Comisiones ---
 
 @secretaria_bp.route("/secretaria")
 def index():
+    # Sin @login_required en el original: se deja así, no se agrega
+    # rol_requerido acá para no cambiar el comportamiento de acceso que
+    # ya tenía esta vista.
     return render_template("secretaria/index.html")
 
 @secretaria_bp.route('/secretaria/alumno/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def crear_alumno():
     form = AlumnoForm()
     if form.validate_on_submit():
@@ -52,6 +59,7 @@ def crear_alumno():
 
 @secretaria_bp.route('/secretaria/alumno/editar/<int:id_persona>', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def editar_alumno(id_persona):
     alumno = Alumno.get_by_id(id_persona)
     if alumno is None:
@@ -93,6 +101,7 @@ def editar_alumno(id_persona):
 
 @secretaria_bp.route('/secretaria/alumno/listado')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def listado_alumnos():
     q = request.args.get('q', '').strip()
     estado_filtro = request.args.get('estado_academico', '')
@@ -124,6 +133,7 @@ def listado_alumnos():
 
 @secretaria_bp.route('/secretaria/alumno/ficha/<int:id_persona>')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def ficha_alumno(id_persona):
     alumno = Alumno.get_by_id(id_persona)
     if alumno is None:
@@ -134,6 +144,7 @@ def ficha_alumno(id_persona):
 
 @secretaria_bp.route('/comision/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def crear_comision():
     form = ComisionForm()
     if form.validate_on_submit():
@@ -153,6 +164,7 @@ def crear_comision():
 
 @secretaria_bp.route('/comision/listado')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def listado_comisiones():
     comisiones = Comision.get_all()
     return render_template('secretaria/listado_comisiones.html', comisiones=comisiones)
@@ -160,6 +172,7 @@ def listado_comisiones():
 
 @secretaria_bp.route('/comision/<int:id_comision>')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def ficha_comision(id_comision):
     comision = Comision.get_by_id(id_comision)
     if comision is None:
@@ -172,6 +185,7 @@ def ficha_comision(id_comision):
 
 @secretaria_bp.route('/comision/<int:id_comision>/inscribir', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def inscribir_alumno_comision(id_comision):
     comision = Comision.get_by_id(id_comision)
     if comision is None:
@@ -234,6 +248,7 @@ def inscribir_alumno_comision(id_comision):
 
 @secretaria_bp.route('/comision/crear_lote', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def crear_comisiones_lote():
     form = LoteComisionForm()
 
@@ -314,6 +329,7 @@ def crear_comisiones_lote():
 
 @secretaria_bp.route('/comision/<int:id_comision>/notas', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def cargar_notas_comision(id_comision):
     comision = Comision.get_by_id(id_comision)
     if comision is None:
@@ -364,4 +380,3 @@ def cargar_notas_comision(id_comision):
         'secretaria/notas_comision_form.html',
         form=form, comision=comision, filas=filas
     )
-

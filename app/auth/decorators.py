@@ -1,30 +1,41 @@
-from functools import wraps
-from functools import wraps
+# app/auth/decorators.py
 
+from functools import wraps
 from flask import abort
 from flask_login import current_user
 
 
-def role_required(*roles_permitidos):
+def rol_requerido(*roles_permitidos):
     """
-    Restringe el acceso a la ruta solo a usuarios logueados cuyo rol
-    (Usuario.get_rol()) esté entre los indicados.
-
+    Decorador para restringir una vista a determinados roles.
     Uso:
-        @role_required('Administrador')
-        @role_required('Administrador', 'Secretaria')
+        @secretaria_bp.route('/secretaria/alumno/crear')
+        @login_required
+        @rol_requerido('Secretaria', 'Administrador')
+        def crear_alumno():
+            ...
+
+    Notas:
+    - Requiere que @login_required (o equivalente) se ejecute antes,
+      así current_user.is_authenticated ya está garantizado. Si se usa
+      solo, igual chequea autenticación por seguridad, pero conviene
+      mantener el orden explícito por legibilidad.
+    - La comparación es case-insensitive (mismo criterio que ya usa
+      base_template.html con current_user.get_rol().upper()), para no
+      depender de que 'Secretaria' esté cargado con esa capitalización
+      exacta en la tabla Roles.
     """
+    roles_normalizados = {r.upper() for r in roles_permitidos}
+
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                abort(401)  # no logueado -> Unauthorized
+                abort(401)
 
             rol_usuario = current_user.get_rol()
-            roles_permitidos_upper = [r.upper() for r in roles_permitidos]
-
-            if rol_usuario is None or rol_usuario.upper() not in roles_permitidos_upper:
-                abort(403)  # logueado pero sin permiso -> Forbidden
+            if rol_usuario is None or rol_usuario.upper() not in roles_normalizados:
+                abort(403)
 
             return f(*args, **kwargs)
         return decorated_function
@@ -37,4 +48,4 @@ def admin_required(f):
     Administrador del Sistema puede gestionar usuarios (ver
     especificación, Módulo de Seguridad y Gestión de Usuarios).
     """
-    return role_required('Administrador')(f)
+    return rol_requerido('Administrador')(f)

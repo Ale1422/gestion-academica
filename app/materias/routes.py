@@ -1,3 +1,5 @@
+# app/materias/routes.py
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
 
@@ -6,7 +8,8 @@ from . import materia_bp
 from .models import Docente, Carrera, Materia, Correlatividad
 from .forms import CarreraForm, MateriaForm, CorrelatividadForm
 from app.auth.models import Persona
-from app.materias.forms import DocenteForm 
+from app.auth.decorators import rol_requerido
+from app.materias.forms import DocenteForm
 
 
 # ------------------------------------------------------------------
@@ -20,9 +23,15 @@ def index():
 
 # ------------------------------------------------------------------
 # CARRERAS
+#
+# Regla aplicada (según especificación: Administrador Académico tiene
+# acceso completo, Secretaria acceso de consulta):
+#   - Alta/edición/baja: solo Administrador
+#   - Listado: Secretaria + Administrador
 # ------------------------------------------------------------------
 @materia_bp.route('/carreras', methods=["GET"])
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def listado_carreras():
     carreras = Carrera.get_all()
     return render_template('materias/carreras_listado.html', carreras=carreras)
@@ -30,6 +39,7 @@ def listado_carreras():
 
 @materia_bp.route('/carreras/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def crear_carrera():
     form = CarreraForm()
     if form.validate_on_submit():
@@ -48,6 +58,7 @@ def crear_carrera():
 
 @materia_bp.route('/carreras/<int:id_carrera>/editar', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def editar_carrera(id_carrera):
     carrera = Carrera.get_by_id(id_carrera)
     if not carrera:
@@ -69,6 +80,7 @@ def editar_carrera(id_carrera):
 
 @materia_bp.route('/carreras/<int:id_carrera>/eliminar', methods=['POST'])
 @login_required
+@rol_requerido('Administrador')
 def eliminar_carrera(id_carrera):
     carrera = Carrera.get_by_id(id_carrera)
     if not carrera:
@@ -92,10 +104,11 @@ def eliminar_carrera(id_carrera):
 
 
 # ------------------------------------------------------------------
-# MATERIAS
+# MATERIAS (mismo criterio que Carreras)
 # ------------------------------------------------------------------
 @materia_bp.route('/materias')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def listado_materias():
     id_carrera = request.args.get('id_carrera', type=int)
     if id_carrera:
@@ -113,6 +126,7 @@ def listado_materias():
 
 @materia_bp.route('/materias/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def crear_materia():
     form = MateriaForm()
     form.id_carrera.choices = [
@@ -141,6 +155,7 @@ def crear_materia():
 
 @materia_bp.route('/materias/<int:id_materia>/editar', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def editar_materia(id_materia):
     materia = Materia.get_by_id(id_materia)
     if not materia:
@@ -168,6 +183,7 @@ def editar_materia(id_materia):
 
 @materia_bp.route('/materias/<int:id_materia>/eliminar', methods=['POST'])
 @login_required
+@rol_requerido('Administrador')
 def eliminar_materia(id_materia):
     materia = Materia.get_by_id(id_materia)
     if not materia:
@@ -193,9 +209,23 @@ def eliminar_materia(id_materia):
 
 # ------------------------------------------------------------------
 # CORRELATIVIDADES
+#
+# ⚠️ PENDIENTE SEÑALADO, NO RESUELTO ACÁ: esta vista mezcla listado
+# (lectura) y alta (escritura) en una sola función. Se restringe todo
+# el endpoint a Administrador porque incluye el alta, pero eso significa
+# que Secretaria — que en la especificación solo tiene "acceso de
+# consulta" a Carreras y Materias — no puede ni ver las correlatividades,
+# a pesar de que materias_listado.html le muestra el botón "Correlati-
+# vidades" (ver listado_materias, que sí es accesible para Secretaria).
+# Con el decorador puesto acá tal cual, Secretaria va a chocar con un
+# 403 al clickear ese botón. La solución de fondo es separar una vista
+# de solo lectura (accesible a Secretaria) de la de alta (solo
+# Administrador) — no se hizo en este cambio para no meter refactor de
+# vistas por fuera de lo pedido (agregar el control de acceso).
 # ------------------------------------------------------------------
 @materia_bp.route('/materias/<int:id_materia>/correlatividades', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def correlatividades(id_materia):
     materia = Materia.get_by_id(id_materia)
     if not materia:
@@ -249,6 +279,7 @@ def correlatividades(id_materia):
     methods=['POST'],
 )
 @login_required
+@rol_requerido('Administrador')
 def eliminar_correlatividad(id_materia, id_materia_requerida, tipo_requisito):
     correlativa = Correlatividad.query.filter_by(
         id_materia=id_materia,
@@ -262,8 +293,19 @@ def eliminar_correlatividad(id_materia, id_materia_requerida, tipo_requisito):
         flash('Correlatividad no encontrada.', 'danger')
     return redirect(url_for('materia_bp.correlatividades', id_materia=id_materia))
 
+
+# ------------------------------------------------------------------
+# DOCENTES
+#
+# La especificación no los asigna a un módulo propio; se tratan como
+# parte de la estructura académica (mismo criterio que Carreras/
+# Materias: alta/edición solo Administrador). El listado se habilita
+# también para Secretaria porque lo necesita al armar el ComisionForm
+# (selección de docente al crear una comisión).
+# ------------------------------------------------------------------
 @materia_bp.route('/docente/crear', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def crear_docente():
     form = DocenteForm()
     if form.validate_on_submit():
@@ -296,6 +338,7 @@ def crear_docente():
 
 @materia_bp.route('/docente/editar/<int:id_persona>', methods=['GET', 'POST'])
 @login_required
+@rol_requerido('Administrador')
 def editar_docente(id_persona):
     docente = Docente.get_by_id(id_persona)
     if docente is None:
@@ -339,6 +382,7 @@ def editar_docente(id_persona):
 
 @materia_bp.route('/docente/listado')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def listado_docentes():
     q = request.args.get('q', '').strip()
 
@@ -360,6 +404,7 @@ def listado_docentes():
 
 @materia_bp.route('/docente/ficha/<int:id_persona>')
 @login_required
+@rol_requerido('Secretaria', 'Administrador')
 def ficha_docente(id_persona):
     docente = Docente.get_by_id(id_persona)
     if docente is None:
