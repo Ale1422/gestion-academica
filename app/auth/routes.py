@@ -7,7 +7,7 @@ from werkzeug.urls import url_parse
 from app import login_manager, db
 from . import auth_bp
 from .forms import LoginForm, SignupForm
-from .models import Usuario, Rol, Persona
+from .models import Usuario, Rol, Persona, LogAuditoria
 from .decorators import admin_required
 
 
@@ -22,6 +22,18 @@ def login():
         usuario = Usuario.get_by_username(form.email.data.upper())
         if usuario is not None and usuario.check_password(form.password.data):
             login_user(usuario, remember=form.remember_me.data)
+
+            # Decisión de diseño (confirmada): NO se loguean los intentos
+            # fallidos, solo el login exitoso — ver LogAuditoria.registrar
+            # en app/auth/models.py para el porqué (id_usuario NOT NULL).
+            LogAuditoria.registrar(
+                usuario=usuario,
+                accion='LOGIN',
+                entidad_afectada='Usuarios',
+                id_entidad_afectada=usuario.id_usuario,
+                detalle=f'Login de {usuario.username}',
+            )
+
             next_page = request.args.get('next')
             if not next_page or url_parse(next_page).netloc != '':
                 if usuario.get_rol().upper() == "ADMINISTRADOR":
@@ -67,6 +79,14 @@ def crear():
             usuario.set_password(password)
             usuario.save()
 
+            LogAuditoria.registrar(
+                usuario=current_user,
+                accion='ALTA',
+                entidad_afectada='Usuarios',
+                id_entidad_afectada=usuario.id_usuario,
+                detalle=f'Alta de usuario {usuario.username} (rol id={id_rol})',
+            )
+
             flash('Usuario creado correctamente.', 'success')
             next_page = request.args.get('next', None)
             if not next_page or url_parse(next_page).netloc != '':
@@ -96,6 +116,13 @@ def cambiar_estado(usuario_id):
     usuario.estado = bool(nuevo_estado)
     try:
         usuario.save()
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Usuarios',
+            id_entidad_afectada=usuario.id_usuario,
+            detalle=f'Cambio de estado a {"activo" if usuario.estado else "inactivo"}',
+        )
         flash("El estado del usuario ha sido actualizado correctamente.", "success")
     except Exception:
         db.session.rollback()
@@ -110,6 +137,15 @@ def cambiar_estado(usuario_id):
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    # LOGOUT no viene del ejemplo del DDL, es una extensión propia
+    # consistente con LOGIN — ver nota en LogAuditoria (app/auth/models.py).
+    LogAuditoria.registrar(
+        usuario=current_user,
+        accion='LOGOUT',
+        entidad_afectada='Usuarios',
+        id_entidad_afectada=current_user.id_usuario,
+        detalle=f'Logout de {current_user.username}',
+    )
     logout_user()
     return redirect(url_for('public.index'))
 

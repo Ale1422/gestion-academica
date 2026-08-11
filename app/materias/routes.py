@@ -1,13 +1,13 @@
 # app/materias/routes.py
 
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from . import materia_bp
 from .models import Docente, Carrera, Materia, Correlatividad
 from .forms import CarreraForm, MateriaForm, CorrelatividadForm
-from app.auth.models import Persona
+from app.auth.models import Persona, LogAuditoria
 from app.auth.decorators import rol_requerido
 from app.materias.forms import DocenteForm
 
@@ -23,11 +23,6 @@ def index():
 
 # ------------------------------------------------------------------
 # CARRERAS
-#
-# Regla aplicada (según especificación: Administrador Académico tiene
-# acceso completo, Secretaria acceso de consulta):
-#   - Alta/edición/baja: solo Administrador
-#   - Listado: Secretaria + Administrador
 # ------------------------------------------------------------------
 @materia_bp.route('/carreras', methods=["GET"])
 @login_required
@@ -49,6 +44,15 @@ def crear_carrera():
             codigo_plan=form.codigo_plan.data or None,
         )
         carrera.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Carreras',
+            id_entidad_afectada=carrera.id_carrera,
+            detalle=f'Alta de carrera "{carrera.nombre}"',
+        )
+
         flash(f'Carrera "{carrera.nombre}" creada correctamente.', 'success')
         return redirect(url_for('materia_bp.listado_carreras'))
     return render_template(
@@ -71,6 +75,15 @@ def editar_carrera(id_carrera):
         carrera.duracion_anios = form.duracion_anios.data
         carrera.codigo_plan = form.codigo_plan.data or None
         carrera.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Carreras',
+            id_entidad_afectada=carrera.id_carrera,
+            detalle=f'Edición de carrera "{carrera.nombre}"',
+        )
+
         flash(f'Carrera "{carrera.nombre}" actualizada.', 'success')
         return redirect(url_for('materia_bp.listado_carreras'))
     return render_template(
@@ -98,7 +111,18 @@ def eliminar_carrera(id_carrera):
         )
         return redirect(url_for('materia_bp.listado_carreras'))
 
+    id_carrera_borrada = carrera.id_carrera
+    nombre_carrera = carrera.nombre
     carrera.delete()
+
+    LogAuditoria.registrar(
+        usuario=current_user,
+        accion='BAJA',
+        entidad_afectada='Carreras',
+        id_entidad_afectada=id_carrera_borrada,
+        detalle=f'Baja de carrera "{nombre_carrera}"',
+    )
+
     flash('Carrera eliminada.', 'success')
     return redirect(url_for('materia_bp.listado_carreras'))
 
@@ -146,6 +170,15 @@ def crear_materia():
             modalidad_aprobacion=form.modalidad_aprobacion.data,
         )
         materia.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Materias',
+            id_entidad_afectada=materia.id_materia,
+            detalle=f'Alta de materia "{materia.nombre}" (carrera id={materia.id_carrera})',
+        )
+
         flash(f'Materia "{materia.nombre}" creada correctamente.', 'success')
         return redirect(url_for('materia_bp.listado_materias'))
     return render_template(
@@ -174,6 +207,15 @@ def editar_materia(id_materia):
         materia.carga_horaria_total = form.carga_horaria_total.data
         materia.modalidad_aprobacion = form.modalidad_aprobacion.data
         materia.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Materias',
+            id_entidad_afectada=materia.id_materia,
+            detalle=f'Edición de materia "{materia.nombre}"',
+        )
+
         flash(f'Materia "{materia.nombre}" actualizada.', 'success')
         return redirect(url_for('materia_bp.listado_materias'))
     return render_template(
@@ -195,7 +237,18 @@ def eliminar_materia(id_materia):
     # ON DELETE CASCADE en el DDL). Es el comportamiento correcto: no
     # queremos borrar en cascada el historial académico de un alumno.
     try:
+        id_materia_borrada = materia.id_materia
+        nombre_materia = materia.nombre
         materia.delete()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='BAJA',
+            entidad_afectada='Materias',
+            id_entidad_afectada=id_materia_borrada,
+            detalle=f'Baja de materia "{nombre_materia}"',
+        )
+
         flash('Materia eliminada.', 'success')
     except Exception:
         db.session.rollback()
@@ -211,17 +264,9 @@ def eliminar_materia(id_materia):
 # CORRELATIVIDADES
 #
 # ⚠️ PENDIENTE SEÑALADO, NO RESUELTO ACÁ: esta vista mezcla listado
-# (lectura) y alta (escritura) en una sola función. Se restringe todo
-# el endpoint a Administrador porque incluye el alta, pero eso significa
-# que Secretaria — que en la especificación solo tiene "acceso de
-# consulta" a Carreras y Materias — no puede ni ver las correlatividades,
-# a pesar de que materias_listado.html le muestra el botón "Correlati-
-# vidades" (ver listado_materias, que sí es accesible para Secretaria).
-# Con el decorador puesto acá tal cual, Secretaria va a chocar con un
-# 403 al clickear ese botón. La solución de fondo es separar una vista
-# de solo lectura (accesible a Secretaria) de la de alta (solo
-# Administrador) — no se hizo en este cambio para no meter refactor de
-# vistas por fuera de lo pedido (agregar el control de acceso).
+# (lectura) y alta (escritura) en una sola función, y está restringida
+# a Administrador desde el cambio de control de acceso anterior. Ver
+# ese comentario más completo si hace falta retomar el tema.
 # ------------------------------------------------------------------
 @materia_bp.route('/materias/<int:id_materia>/correlatividades', methods=['GET', 'POST'])
 @login_required
@@ -261,6 +306,22 @@ def correlatividades(id_materia):
                 tipo_requisito=form.tipo_requisito.data,
             )
             correlativa.save()
+
+            # Correlatividad tiene clave primaria compuesta, no un id
+            # propio — se usa id_materia como id_entidad_afectada y el
+            # resto del detalle va en `detalle`.
+            LogAuditoria.registrar(
+                usuario=current_user,
+                accion='ALTA',
+                entidad_afectada='Correlatividades',
+                id_entidad_afectada=materia.id_materia,
+                detalle=(
+                    f'Correlatividad agregada: materia={materia.id_materia} '
+                    f'requiere={form.id_materia_requerida.data} '
+                    f'({form.tipo_requisito.data})'
+                ),
+            )
+
             flash('Correlatividad agregada.', 'success')
         return redirect(url_for('materia_bp.correlatividades', id_materia=id_materia))
 
@@ -288,6 +349,18 @@ def eliminar_correlatividad(id_materia, id_materia_requerida, tipo_requisito):
     ).first()
     if correlativa:
         correlativa.delete()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='BAJA',
+            entidad_afectada='Correlatividades',
+            id_entidad_afectada=id_materia,
+            detalle=(
+                f'Correlatividad eliminada: materia={id_materia} '
+                f'requerida={id_materia_requerida} ({tipo_requisito})'
+            ),
+        )
+
         flash('Correlatividad eliminada.', 'success')
     else:
         flash('Correlatividad no encontrada.', 'danger')
@@ -296,12 +369,6 @@ def eliminar_correlatividad(id_materia, id_materia_requerida, tipo_requisito):
 
 # ------------------------------------------------------------------
 # DOCENTES
-#
-# La especificación no los asigna a un módulo propio; se tratan como
-# parte de la estructura académica (mismo criterio que Carreras/
-# Materias: alta/edición solo Administrador). El listado se habilita
-# también para Secretaria porque lo necesita al armar el ComisionForm
-# (selección de docente al crear una comisión).
 # ------------------------------------------------------------------
 @materia_bp.route('/docente/crear', methods=['GET', 'POST'])
 @login_required
@@ -329,6 +396,14 @@ def crear_docente():
         )
         db.session.add(docente)
         db.session.commit()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Docentes',
+            id_entidad_afectada=docente.id_persona,
+            detalle=f'Alta de docente {persona.nombre_completo}',
+        )
 
         flash(f'Docente {persona.nombre_completo} creado correctamente.', 'success')
         return redirect(url_for('materia_bp.listado_docentes'))
@@ -374,6 +449,15 @@ def editar_docente(id_persona):
         docente.fecha_ingreso = form.fecha_ingreso.data
 
         db.session.commit()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Docentes',
+            id_entidad_afectada=docente.id_persona,
+            detalle=f'Edición de datos de {persona.nombre_completo}',
+        )
+
         flash(f'Datos de {persona.nombre_completo} actualizados.', 'success')
         return redirect(url_for('materia_bp.listado_docentes'))
 

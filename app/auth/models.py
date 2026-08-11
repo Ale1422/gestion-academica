@@ -66,6 +66,7 @@ class Usuario(UserMixin, db.Model):
 
     persona = db.relationship('Persona', back_populates='usuario')
     rol = db.relationship('Rol', back_populates='usuarios')
+    logs_auditoria = db.relationship('LogAuditoria', back_populates='usuario')
 
     def __init__(self, username, id_persona, id_rol=None):
         self.username = username
@@ -106,3 +107,75 @@ class Usuario(UserMixin, db.Model):
     @staticmethod
     def get_all():
         return Usuario.query.all()
+
+
+class LogAuditoria(db.Model):
+    """
+    Registro de auditoría de acciones del sistema (módulo Seguridad y
+    Gestión de Usuarios). Mapea la tabla LogsAuditoria del DDL
+    (ModeloDatos.sql, sección 5).
+
+    Convención de `accion` (no es ENUM en el DDL, es VARCHAR libre —
+    se mantiene consistencia por convención de código, no por
+    constraint de base):
+        'ALTA'          - creación de un registro
+        'MODIFICACION'  - edición de un registro existente
+        'BAJA'          - eliminación de un registro
+        'LOGIN'         - inicio de sesión exitoso
+        'LOGOUT'        - cierre de sesión (extensión propia, no viene
+                          de un ejemplo del DDL, pero es consistente)
+
+    Decisión de diseño: NO se loguean los intentos de login fallidos,
+    porque id_usuario es NOT NULL en el DDL y, antes de autenticar, no
+    hay un Usuario válido para asociar la fila. Si en el futuro se
+    quiere auditar también los fallos, hay que revisar el esquema
+    (columna nullable, o una tabla separada para intentos fallidos).
+    """
+    __tablename__ = 'LogsAuditoria'
+
+    id_log = db.Column(db.Integer, primary_key=True)
+    id_usuario = db.Column(db.Integer, db.ForeignKey('Usuarios.id_usuario'), nullable=False)
+    accion = db.Column(db.String(100), nullable=False)
+    entidad_afectada = db.Column(db.String(50))
+    id_entidad_afectada = db.Column(db.Integer)
+    detalle = db.Column(db.Text)
+    fecha_hora = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+
+    usuario = db.relationship('Usuario', back_populates='logs_auditoria')
+
+    def __repr__(self):
+        return f'<LogAuditoria {self.accion} {self.entidad_afectada}={self.id_entidad_afectada}>'
+
+    @staticmethod
+    def registrar(usuario, accion, entidad_afectada=None, id_entidad_afectada=None, detalle=None):
+        """
+        Crea y persiste una fila de auditoría.
+
+        Hace su propio commit, SEPARADO de la transacción de negocio
+        que originó la acción (ver nota de diseño en la respuesta que
+        acompaña este archivo). Se llama siempre DESPUÉS de que el
+        cambio de negocio ya se guardó con éxito.
+
+        `usuario`: el Usuario autenticado que ejecutó la acción
+        (típicamente current_user de Flask-Login).
+        """
+        log = LogAuditoria(
+            id_usuario=usuario.id_usuario,
+            accion=accion,
+            entidad_afectada=entidad_afectada,
+            id_entidad_afectada=id_entidad_afectada,
+            detalle=detalle,
+        )
+        db.session.add(log)
+        db.session.commit()
+        return log
+
+    @staticmethod
+    def get_by_usuario(id_usuario):
+        return LogAuditoria.query.filter_by(id_usuario=id_usuario).order_by(
+            LogAuditoria.fecha_hora.desc()
+        ).all()
+
+    @staticmethod
+    def get_recientes(limite=100):
+        return LogAuditoria.query.order_by(LogAuditoria.fecha_hora.desc()).limit(limite).all()

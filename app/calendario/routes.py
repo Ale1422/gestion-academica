@@ -1,7 +1,7 @@
 # app/calendario/routes.py
 
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.calendario import calendario_bp
@@ -15,13 +15,13 @@ from app.calendario.validaciones import (
 )
 from app.secretaria.models import Alumno
 from app.materias.models import Materia
-from app.auth.models import Persona
-
+from app.auth.models import Persona, LogAuditoria
 from app.auth.decorators import rol_requerido
 
 
 @calendario_bp.route('/calendario')
 def index():
+    # Sin @login_required en el original: se deja así.
     eventos = Evento.get_proximos()
     return render_template('calendario/index.html', eventos=eventos)
 
@@ -42,6 +42,15 @@ def crear_evento():
             tipo=form.tipo.data,
         )
         evento.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Eventos',
+            id_entidad_afectada=evento.id_evento,
+            detalle=f'Alta de evento "{evento.nombre}" ({evento.tipo})',
+        )
+
         flash(f'Evento "{evento.nombre}" creado correctamente.', 'success')
         return redirect(url_for('calendario_bp.listado_eventos'))
     return render_template('calendario/evento_form.html', form=form, titulo='Nuevo evento')
@@ -66,6 +75,15 @@ def editar_evento(id_evento):
         evento.fecha_fin = form.fecha_fin.data
         evento.tipo = form.tipo.data
         db.session.commit()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Eventos',
+            id_entidad_afectada=evento.id_evento,
+            detalle=f'Edición de evento "{evento.nombre}"',
+        )
+
         flash(f'Evento "{evento.nombre}" actualizado.', 'success')
         return redirect(url_for('calendario_bp.listado_eventos'))
 
@@ -78,6 +96,7 @@ def editar_evento(id_evento):
 @login_required
 @rol_requerido('Secretaria', 'Preceptora', 'Administrador')
 def listado_eventos():
+    # Solo lectura: no se loguea. Preceptora tiene acceso de consulta.
     tipo_filtro = request.args.get('tipo', '')
     query = Evento.query
     if tipo_filtro:
@@ -97,8 +116,18 @@ def eliminar_evento(id_evento):
     if evento is None:
         flash('Evento no encontrado.', 'danger')
     else:
+        id_evento_borrado = evento.id_evento
         nombre = evento.nombre
         evento.delete()  # cascade='all, delete-orphan' también borra la MesaExamen si es tipo Examen
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='BAJA',
+            entidad_afectada='Eventos',
+            id_entidad_afectada=id_evento_borrado,
+            detalle=f'Baja de evento "{nombre}"',
+        )
+
         flash(f'Evento "{nombre}" eliminado.', 'success')
     return redirect(url_for('calendario_bp.listado_eventos'))
 
@@ -142,6 +171,20 @@ def crear_mesa():
         )
         db.session.add(mesa)
         db.session.commit()
+
+        # Se loguea la MesaExamen como entidad principal de la acción
+        # (el Evento que la acompaña queda referenciado en el detalle,
+        # para no duplicar una fila de log por cada mitad de la alta).
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='MesasExamen',
+            id_entidad_afectada=mesa.id_mesa,
+            detalle=(
+                f'Alta de mesa de examen de "{materia.nombre}" '
+                f'({form.llamado.data}, evento id={evento.id_evento})'
+            ),
+        )
 
         flash(f'Mesa de examen de "{materia.nombre}" creada correctamente.', 'success')
         return redirect(url_for('calendario_bp.ficha_mesa', id_mesa=mesa.id_mesa))
@@ -215,7 +258,18 @@ def inscribir_alumnos_mesa(id_mesa):
                 alumno = Alumno.get_by_id(id_alumno)
                 errores.append(f'{alumno.nombre_completo}: {e}')
 
+        # Log resumen (no uno por alumno): inscribir_alumno_mesa() no
+        # devuelve la InscripcionMesa creada, así que no tenemos un id
+        # propio por fila sin tocar ese archivo — mismo criterio que
+        # las altas en lote de Comisiones.
         if inscriptos_ok:
+            LogAuditoria.registrar(
+                usuario=current_user,
+                accion='ALTA',
+                entidad_afectada='InscripcionesMesa',
+                id_entidad_afectada=id_mesa,
+                detalle=f'{inscriptos_ok} alumno(s) inscripto(s) en mesa id={id_mesa}',
+            )
             flash(f'{inscriptos_ok} alumno(s) inscripto(s) correctamente.', 'success')
         for err in errores:
             flash(err, 'danger')
@@ -251,6 +305,7 @@ def resultados_mesa(id_mesa):
 
     if form.validate_on_submit():
         errores = []
+        cargados = 0
         for fila in form.filas:
             id_alumno = int(fila.id_alumno.data)
             try:
@@ -258,9 +313,20 @@ def resultados_mesa(id_mesa):
                     id_mesa=id_mesa, id_alumno=id_alumno,
                     resultado=fila.resultado.data, nota_final=fila.nota_final.data,
                 )
+                cargados += 1
             except ValidacionError as e:
                 alumno = Alumno.get_by_id(id_alumno)
                 errores.append(f'{alumno.nombre_completo}: {e}')
+
+        # Log resumen por mesa (mismo criterio que inscripción en lote).
+        if cargados:
+            LogAuditoria.registrar(
+                usuario=current_user,
+                accion='MODIFICACION',
+                entidad_afectada='InscripcionesMesa',
+                id_entidad_afectada=id_mesa,
+                detalle=f'Resultados cargados para {cargados} alumno(s) en mesa id={id_mesa}',
+            )
 
         if errores:
             for err in errores:

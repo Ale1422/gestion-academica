@@ -2,7 +2,7 @@
 
 from datetime import date
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.preceptoria import preceptoria_bp
@@ -12,6 +12,7 @@ from app.secretaria.models import Comision, Alumno
 from app.preceptoria.validaciones import (
     UMBRAL_ALERTA_INASISTENCIA, calcular_porcentaje_inasistencia,
 )
+from app.auth.models import LogAuditoria
 from app.auth.decorators import rol_requerido
 
 
@@ -28,8 +29,7 @@ def index():
 @login_required
 @rol_requerido('Preceptora', 'Secretaria', 'Administrador')
 def reporte_asistencia(id_comision):
-    # Secretaria tiene acceso de consulta a reportes de asistencia según
-    # la especificación (módulo Control de Asistencia).
+    # Solo lectura: no se loguea (no es alta/baja/modificación).
     comision = Comision.get_by_id(id_comision)
     if comision is None:
         flash('La comisión no existe.', 'warning')
@@ -100,6 +100,23 @@ def registrar_asistencia(id_comision):
                 estado=fila.estado.data,
             )
         db.session.commit()
+
+        # Log resumen por comisión+fecha, no uno por alumno: Asistencia
+        # .registrar() es un upsert (alta o edición según el caso), y
+        # separar cuál fue cuál por fila no aporta demasiado frente al
+        # ruido de N filas de log por cada toma de asistencia diaria.
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Asistencias',
+            id_entidad_afectada=id_comision,
+            detalle=(
+                f'Asistencia registrada para comisión id={id_comision}, '
+                f'fecha={form.fecha.data.isoformat()}, '
+                f'{len(inscripciones)} alumno(s)'
+            ),
+        )
+
         flash(f'Asistencia del {form.fecha.data.strftime("%d/%m/%Y")} guardada.', 'success')
         return redirect(url_for(
             'preceptoria_bp.registrar_asistencia',
@@ -119,9 +136,7 @@ def registrar_asistencia(id_comision):
 @login_required
 @rol_requerido('Preceptora', 'Secretaria', 'Administrador')
 def historial_asistencia(id_persona):
-    # Secretaria tiene acceso de consulta al historial de asistencia
-    # (lo necesita para verificar estados académicos, según la
-    # especificación).
+    # Solo lectura: no se loguea.
     alumno = Alumno.get_by_id(id_persona)
     if alumno is None:
         flash('Alumno no encontrado.', 'danger')

@@ -1,7 +1,7 @@
 # app/secretaria/routes.py
 
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from datetime import date
 from app import db
@@ -9,7 +9,7 @@ from app.secretaria import secretaria_bp
 from app.secretaria.models import Alumno, Comision, Inscripcion, Nota
 from app.secretaria.forms import ComisionForm, AlumnoForm, LoteComisionForm, InscripcionLoteForm, NotasLoteForm
 from app.secretaria.validaciones import inscribir_alumno, registrar_nota, ValidacionError
-from app.auth.models import Persona
+from app.auth.models import Persona, LogAuditoria
 from app.auth.decorators import rol_requerido
 
 from app.materias.models import Carrera, Materia, Docente
@@ -50,6 +50,14 @@ def crear_alumno():
         )
         db.session.add(alumno)
         db.session.commit()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Alumnos',
+            id_entidad_afectada=alumno.id_persona,
+            detalle=f'Alta de alumno {persona.nombre_completo} (legajo {alumno.legajo})',
+        )
 
         flash(f'Alumno {persona.nombre_completo} creado correctamente (legajo {alumno.legajo}).', 'success')
         return redirect(url_for('secretaria_bp.listado_alumnos'))
@@ -93,6 +101,15 @@ def editar_alumno(id_persona):
         alumno.estado_academico = form.estado_academico.data
 
         db.session.commit()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='MODIFICACION',
+            entidad_afectada='Alumnos',
+            id_entidad_afectada=alumno.id_persona,
+            detalle=f'Edición de datos de {persona.nombre_completo}',
+        )
+
         flash(f'Datos de {persona.nombre_completo} actualizados.', 'success')
         return redirect(url_for('secretaria_bp.listado_alumnos'))
 
@@ -157,6 +174,18 @@ def crear_comision():
             cupo_maximo=form.cupo_maximo.data,
         )
         comision.save()
+
+        LogAuditoria.registrar(
+            usuario=current_user,
+            accion='ALTA',
+            entidad_afectada='Comisiones',
+            id_entidad_afectada=comision.id_comision,
+            detalle=(
+                f'Alta de comisión materia={comision.id_materia} '
+                f'{comision.ciclo_lectivo}-{comision.cuatrimestre}'
+            ),
+        )
+
         flash('Comisión creada correctamente.', 'success')
         return redirect(url_for('secretaria_bp.listado_comisiones'))
     return render_template('secretaria/comision_form.html', form=form)
@@ -208,9 +237,24 @@ def inscribir_alumno_comision(id_comision):
         rechazados = []
         for id_alumno in ids_alumnos:
             try:
-                inscribir_alumno(id_alumno=id_alumno, id_comision=id_comision)
+                inscripcion = inscribir_alumno(id_alumno=id_alumno, id_comision=id_comision)
                 alumno = Alumno.get_by_id(id_alumno)
                 inscriptos.append(alumno.nombre_completo if alumno else str(id_alumno))
+
+                # Se loguea una fila por alumno inscripto: a diferencia
+                # de las altas en lote de Comisiones, acá sí tenemos el
+                # id de la Inscripcion sin esfuerzo extra, porque
+                # inscribir_alumno() ya la devuelve creada.
+                LogAuditoria.registrar(
+                    usuario=current_user,
+                    accion='ALTA',
+                    entidad_afectada='Inscripciones',
+                    id_entidad_afectada=inscripcion.id_inscripcion,
+                    detalle=(
+                        f'Inscripción de alumno id={id_alumno} '
+                        f'a comisión id={id_comision}'
+                    ),
+                )
             except ValidacionError as e:
                 alumno = Alumno.get_by_id(id_alumno)
                 nombre = alumno.nombre_completo if alumno else str(id_alumno)
@@ -287,7 +331,21 @@ def crear_comisiones_lote():
 
         db.session.commit()
 
+        # Log resumen, no uno por comisión: acá no se hace flush() por
+        # cada alta dentro del bucle (no se necesitaba antes), así que
+        # no tenemos el id_comision de cada una sin agregar flushes que
+        # no estaban. Un log resumen es preferible a forzar ese cambio.
         if creadas:
+            LogAuditoria.registrar(
+                usuario=current_user,
+                accion='ALTA',
+                entidad_afectada='Comisiones',
+                id_entidad_afectada=None,
+                detalle=(
+                    f'Alta en lote: {creadas} comisión(es) creada(s) para '
+                    f'ciclo {ciclo_lectivo}, cuatrimestre {cuatrimestre}, turno {turno}'
+                ),
+            )
             flash(f'Se crearon {creadas} comisiones correctamente.', 'success')
         if omitidas:
             flash(f'Se omitieron (sin docente elegido): {", ".join(omitidas)}.', 'warning')
@@ -363,6 +421,21 @@ def cargar_notas_comision(id_comision):
                     fecha=entrada.fecha.data or date.today(),
                 )
                 cargadas += 1
+
+                # NOTA: no tenemos acá el id_nota generado (registrar_nota()
+                # vive en un validaciones.py que no está a la vista en esta
+                # sesión de trabajo, y no sabemos si devuelve la Nota
+                # creada). Se loguea con id_entidad_afectada=id_inscripcion
+                # como referencia disponible; si registrar_nota() devuelve
+                # la Nota con su id, conviene ajustar esto para loguear el
+                # id_nota real.
+                LogAuditoria.registrar(
+                    usuario=current_user,
+                    accion='ALTA',
+                    entidad_afectada='Notas',
+                    id_entidad_afectada=id_insc,
+                    detalle=f'Nota {entrada.instancia.data}={entrada.valor.data} (inscripción {id_insc})',
+                )
             except ValidacionError as e:
                 insc = Inscripcion.get_by_id(id_insc)
                 errores.append(f'{insc.alumno.nombre_completo}: {e}')
