@@ -1,0 +1,84 @@
+{% extends "base_template.html" %}
+
+{% block title %}Notas — {{ comision.materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Notas — {{ comision.materia.nombre }} ({{ comision.ciclo_lectivo }}, {{ comision.cuatrimestre }})</h2>
+        <div>
+            <a href="{{ url_for('secretaria_bp.cargar_notas_comision', id_comision=comision.id_comision) }}"
+               class="btn btn-primary">Cargar notas</a>
+            <a href="{{ url_for('secretaria_bp.ficha_comision', id_comision=comision.id_comision) }}"
+               class="btn btn-outline-secondary">Volver a la comisión</a>
+        </div>
+    </div>
+
+    <p>
+        <strong>Docente:</strong> {{ comision.docente.nombre_completo }}<br>
+        <strong>Turno:</strong> {{ comision.turno }}
+    </p>
+
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Legajo</th>
+                <th>Alumno</th>
+                {% for instancia in instancias %}
+                <th class="text-center">{{ instancia }}</th>
+                {% endfor %}
+                <th class="text-center">Final <small class="text-muted">(histórico)</small></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for insc, por_instancia, notas_final in filas %}
+            <tr>
+                <td>{{ insc.alumno.legajo }}</td>
+                <td>{{ insc.alumno.nombre_completo }}</td>
+                {% for instancia in instancias %}
+                <td class="text-center">
+                    {% if por_instancia[instancia] %}
+                        {% for nota in por_instancia[instancia] %}
+                            <span class="badge {% if nota.valor >= 6 %}badge-success{% else %}badge-danger{% endif %}">
+                                {{ '%.2f' % nota.valor }}
+                            </span>
+                            <small class="text-muted d-block">{{ nota.fecha.strftime('%d/%m/%Y') }}</small>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <td class="text-center">
+                    {% if notas_final %}
+                        {% for nota in notas_final %}
+                            <span class="badge badge-secondary">{{ '%.2f' % nota.valor }}</span>
+                            <small class="text-muted d-block">{{ nota.fecha.strftime('%d/%m/%Y') }}</small>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ instancias|length + 3 }}" class="text-center text-muted">
+                    Todavía no hay alumnos inscriptos en esta comisión.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="text-muted">
+        La columna "Final" muestra registros históricos únicamente: el final
+        de una materia se rinde por Mesa de Examen, no se carga acá.
+    </p>
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
 # app/secretaria/forms.py
 
+from datetime import date
+
 from flask_wtf import FlaskForm
 from wtforms import SelectField, IntegerField, SubmitField, StringField, HiddenField, FieldList, FormField, DecimalField
 from wtforms.fields import DateField
@@ -130,33 +132,42 @@ class InscripcionLoteForm(FlaskForm):
     pass
 
 class NotaEntryForm(FlaskForm):
-    """Una fila dentro del lote de carga de notas por comisión."""
+    """
+    Una fila dentro del lote de carga de notas por comisión.
+    La instancia y la fecha son únicas para todo el lote (se cargan una
+    sola vez en NotasLoteForm) porque en la práctica se registran notas
+    de una misma evaluación (ej. "1er Parcial del 12/06") para toda la
+    comisión de una sola vez, no instancias distintas por alumno en el
+    mismo envío. Acá solo queda el valor por alumno; dejar el campo en
+    blanco significa "no cargar nota para este alumno en esta tanda".
+    """
 
     class Meta:
         csrf = False  # el CSRF lo maneja NotasLoteForm (el form padre)
 
     id_inscripcion = HiddenField()
+    valor = DecimalField(
+        'Valor', places=2, validators=[Optional(), NumberRange(min=0, max=10)],
+        render_kw={'class': 'form-control form-control-sm', 'placeholder': '0-10'}
+    )
+
+
+class NotasLoteForm(FlaskForm):
     instancia = SelectField(
+        'Instancia',
         choices=[
-            ('', '-- No cargar --'),
             ('1er Parcial', '1er Parcial'),
             ('2do Parcial', '2do Parcial'),
             ('Recuperatorio', 'Recuperatorio'),
             ('TP', 'TP'),
         ],
-        validators=[Optional()],
-        render_kw={'class': 'form-control form-control-sm'}
-    )
-    valor = DecimalField(
-        'Valor', places=2, validators=[Optional(), NumberRange(min=0, max=10)],
-        render_kw={'class': 'form-control form-control-sm', 'placeholder': '0-10'}
+        validators=[DataRequired()],
+        render_kw={'class': 'form-control'}
     )
     fecha = DateField(
-        'Fecha', validators=[Optional()], format='%Y-%m-%d',
-        render_kw={'class': 'form-control form-control-sm'}
+        'Fecha', validators=[DataRequired()], format='%Y-%m-%d',
+        default=lambda: date.today(),
+        render_kw={'class': 'form-control'}
     )
-
-
-class NotasLoteForm(FlaskForm):
     entradas = FieldList(FormField(NotaEntryForm))
     submit = SubmitField('Guardar notas', render_kw={'class': 'btn btn-primary'})

@@ -3,16 +3,52 @@
 > Actualizar este archivo al cierre de cada módulo y volver a subirlo al
 > proyecto, para que las conversaciones nuevas arranquen con el estado real.
 
-## 1. Auth (Seguridad y Gestión de Usuarios)
-- [x] Modelos: `Persona`, `Usuario`, `Rol` (app/auth/models.py)
+## 1. Auth (Seguridad y Gestión de Usuarios) — CERRADO
+- [x] Modelos: `Persona`, `Usuario`, `Rol`, `LogAuditoria` (app/auth/models.py)
 - [x] Rutas: login, crear usuario, listado, cambiar estado, logout
 - [x] Templates: login_form, listadoUsuarios, signup_form
 - [x] Usuario admin inicial (script SQL)
-- [x] `decorators.py`: control de acceso por rol (hoy cualquier logueado
-      entra a cualquier ruta — falta diferenciar Secretaria/Preceptora/Admin)
-- [ ] LogsAuditoria (tabla ya existe en el DDL, falta modelo + integración)
+- [x] `decorators.py`: `rol_requerido(*roles)` genérico agregado.
+      `admin_required` se mantiene como alias de compatibilidad sobre
+      `rol_requerido('Administrador')` (ya estaba en uso en
+      `auth/routes.py`). Aplicado sobre las rutas mutantes y de consulta
+      de los 5 blueprints (auth, secretaria, materias, preceptoria,
+      calendario) según los accesos definidos en la especificación
+      funcional (Secretaria / Preceptora / Administrador).
+- [x] `LogsAuditoria`: modelo `LogAuditoria` (app/auth/models.py) +
+      integración manual vía `LogAuditoria.registrar()` en las rutas de
+      alta/edición/baja de los 5 blueprints. Commit separado de la
+      transacción de negocio (no atómico — ver docstring del modelo).
+      Altas en lote (comisiones, inscripción a mesa, resultados de mesa,
+      asistencia diaria) quedan logueadas con una fila resumen, no una
+      por ítem del lote.
+- [x] Login exitoso queda logueado (`accion='LOGIN'`). Intentos de login
+      fallidos **no** se loguean — decisión explícita, ver nota abajo.
+- [x] Migración corrida y confirmada funcionando por el usuario.
 - [x] Import de `Alumno` en `secretaria/routes.py` (necesario para que
-      SQLAlchemy registre la clase — sigue sin hacerse, ver módulo 3)
+      SQLAlchemy registre la clase)
+
+**Pendiente relacionado, no bloqueante:**
+- `correlatividades()` en `materias/routes.py` mezcla listado (lectura)
+  y alta (escritura) en una sola vista, y quedó restringida entera a
+  `Administrador`. Esto significa que Secretaria — que según la
+  especificación solo tiene "acceso de consulta" a Carreras y Materias —
+  no puede ver las correlatividades, a pesar de que
+  `materias_listado.html` le muestra el botón. Separar en algún momento
+  una vista de solo lectura (Secretaria) de la de alta (Administrador).
+- `admin_required` en `decorators.py` se reconstruyó como alias sin
+  haber visto el contenido original del archivo — confirmar que el
+  comportamiento real coincide (compara `get_rol().upper() ==
+  'ADMINISTRADOR'`), sobre todo si en algún momento se separan los
+  roles `Administrador Académico` / `Administrador del Sistema` que
+  menciona la especificación (hoy el sistema maneja un solo rol
+  `Administrador` genérico).
+- `LogsAuditoria.id_usuario` es `NOT NULL` en el DDL: no se pueden
+  auditar intentos de login fallidos con el esquema actual. Si se quiere
+  eso a futuro, hay que revisar el esquema (columna nullable o tabla
+  aparte para intentos fallidos) — no se tocó el DDL para esto.
+- Se descartó `accion='LOGOUT'` (decisión del usuario) — solo se audita
+  `LOGIN` exitoso, altas, ediciones y bajas.
 
 ## 2. Carreras y Materias — CERRADO
 - [x] Modelos: `Carrera`, `Materia`, `Correlatividad` (app/materias/models.py)
@@ -95,6 +131,7 @@
   tras sacar la rama de `'Final'`, ya no la usa nada en ese archivo.
   Revisar si conviene eliminarla o si se va a reusar para alguna regla
   de `Recuperatorio` a futuro.
+
 
 ## 6. Asistencia (Preceptoria) — CERRADO
 - [x] Modelo: `Asistencia` (app/preceptoria/models.py, blueprint y archivo
@@ -200,8 +237,8 @@ del instituto):**
       `SECRETARIA` (acceso completo — crear eventos, crear mesas,
       inscribir, cargar resultados) y para `PRECEPTORA` (acceso de
       consulta — solo "Próximos eventos" y "Mesas de examen", sin links
-      de alta/edición; **el control real de acceso sigue pendiente del
-      punto abierto en el módulo 1**, esto solo esconde los links)
+      de alta/edición; el control real de acceso ya no es un punto
+      abierto — ver módulo 1, `rol_requerido` aplicado a estas rutas)
 **Decisión pendiente de confirmar (no cerrada, revisar con el usuario real
 del instituto):**
 - `ESTADOS_CONSUMEN_INTENTO = {'Desaprobado', 'Ausente'}` en
@@ -264,3 +301,13 @@ del instituto):**
 - `MAX_INTENTOS_FINAL` (módulo 7) es constante de código, mismo criterio
   que `NOTA_MINIMA_APROBACION` (módulo 5) y `UMBRAL_ALERTA_INASISTENCIA`
   (módulo 6) — no editable desde la UI sin avisar.
+- Roles usados por `rol_requerido()` (módulo 1): `'Secretaria'`,
+  `'Preceptora'`, `'Administrador'` — un único rol `Administrador`
+  genérico con acceso total, no se separaron `Administrador Académico`
+  / `Administrador del Sistema` como distingue la especificación
+  funcional. No reabrir esta simplificación sin avisar.
+- Auditoría (`LogsAuditoria`): se audita `LOGIN` exitoso, `ALTA`,
+  `MODIFICACION` y `BAJA` en todos los blueprints. No se audita
+  `LOGOUT` ni los intentos de login fallidos (decisiones explícitas del
+  usuario). Las altas en lote quedan logueadas como una sola fila
+  resumen, no una por ítem.

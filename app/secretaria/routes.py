@@ -3,7 +3,6 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
-from datetime import date
 from app import db
 from app.secretaria import secretaria_bp
 from app.secretaria.models import Alumno, Comision, Inscripcion, Nota
@@ -407,41 +406,40 @@ def cargar_notas_comision(id_comision):
             form.entradas.append_entry({'id_inscripcion': insc.id_inscripcion})
 
     if form.validate_on_submit():
+        # Instancia y fecha son una sola por lote (elegidas arriba del
+        # listado), no por fila: esta carga registra la misma evaluación
+        # para toda la comisión de una vez.
+        instancia = form.instancia.data
+        fecha = form.fecha.data
+
         cargadas = 0
         errores = []
         for entrada in form.entradas:
-            if not entrada.instancia.data or entrada.valor.data is None:
-                continue  # fila vacía, se ignora
+            if entrada.valor.data is None:
+                continue  # fila vacía (sin nota para este alumno), se ignora
             id_insc = int(entrada.id_inscripcion.data)
             try:
-                registrar_nota(
+                nota = registrar_nota(
                     id_inscripcion=id_insc,
-                    instancia=entrada.instancia.data,
+                    instancia=instancia,
                     valor=entrada.valor.data,
-                    fecha=entrada.fecha.data or date.today(),
+                    fecha=fecha,
                 )
                 cargadas += 1
 
-                # NOTA: no tenemos acá el id_nota generado (registrar_nota()
-                # vive en un validaciones.py que no está a la vista en esta
-                # sesión de trabajo, y no sabemos si devuelve la Nota
-                # creada). Se loguea con id_entidad_afectada=id_inscripcion
-                # como referencia disponible; si registrar_nota() devuelve
-                # la Nota con su id, conviene ajustar esto para loguear el
-                # id_nota real.
                 LogAuditoria.registrar(
                     usuario=current_user,
                     accion='ALTA',
                     entidad_afectada='Notas',
-                    id_entidad_afectada=id_insc,
-                    detalle=f'Nota {entrada.instancia.data}={entrada.valor.data} (inscripción {id_insc})',
+                    id_entidad_afectada=nota.id_nota,
+                    detalle=f'Nota {instancia}={entrada.valor.data} (inscripción {id_insc})',
                 )
             except ValidacionError as e:
                 insc = Inscripcion.get_by_id(id_insc)
                 errores.append(f'{insc.alumno.nombre_completo}: {e}')
 
         if cargadas:
-            flash(f'{cargadas} nota(s) cargada(s) correctamente.', 'success')
+            flash(f'{cargadas} nota(s) cargada(s) correctamente ({instancia}, {fecha.strftime("%d/%m/%Y")}).', 'success')
         for err in errores:
             flash(err, 'danger')
 
@@ -452,4 +450,53 @@ def cargar_notas_comision(id_comision):
     return render_template(
         'secretaria/notas_comision_form.html',
         form=form, comision=comision, filas=filas
+    )
+
+
+# Instancias que se muestran como columnas en la vista de solo lectura.
+# 'Final' se excluye de las columnas normales: registrar_nota() ya no
+# permite cargarla (se rinde por Mesa de Examen), pero puede seguir
+# existiendo en datos históricos (el ENUM de Notas.instancia no se tocó
+# por compatibilidad — ver EstadoProyecto.md módulo 5). Se muestra aparte,
+# marcada como histórica, para no ocultar esos datos viejos sin inventar
+# una migración que no hace falta.
+INSTANCIAS_NOTAS_COLUMNAS = ['1er Parcial', '2do Parcial', 'Recuperatorio', 'TP']
+
+
+@secretaria_bp.route('/comision/<int:id_comision>/notas/ver')
+@login_required
+@rol_requerido('Secretaria', 'Administrador')
+def ver_notas_comision(id_comision):
+    comision = Comision.get_by_id(id_comision)
+    if comision is None:
+        flash('La comisión no existe.', 'warning')
+        return redirect(url_for('secretaria_bp.listado_comisiones'))
+
+    inscripciones = sorted(
+        comision.inscripciones,
+        key=lambda i: (i.alumno.persona.apellido, i.alumno.persona.nombre)
+    )
+
+    # Para cada inscripción, agrupamos sus notas por instancia. Una
+    # instancia puede tener más de una Nota (ej. un Recuperatorio
+    # rendido dos veces): registrar_nota() siempre inserta, nunca
+    # pisa una fila existente (ver validaciones.py), así que acá se
+    # listan todas, no solo la última.
+    filas = []
+    for insc in inscripciones:
+        por_instancia = {instancia: [] for instancia in INSTANCIAS_NOTAS_COLUMNAS}
+        notas_final_historicas = []
+        for nota in sorted(insc.notas, key=lambda n: n.fecha):
+            if nota.instancia in por_instancia:
+                por_instancia[nota.instancia].append(nota)
+            else:
+                # 'Final' u otro valor histórico fuera de las columnas normales.
+                notas_final_historicas.append(nota)
+        filas.append((insc, por_instancia, notas_final_historicas))
+
+    return render_template(
+        'secretaria/notas_comision_ver.html',
+        comision=comision,
+        filas=filas,
+        instancias=INSTANCIAS_NOTAS_COLUMNAS,
     )
