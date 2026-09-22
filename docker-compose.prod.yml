@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: gestion_academica
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No expongo el puerto 3306 al host: solo la red interna de docker
+    # necesita verlo. Si en algún momento necesitás conectarte con un
+    # cliente MySQL desde afuera, agregá "ports: - 3306:3306" temporalmente.
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000"
+      # Bindeado a localhost: tu nginx externo corre en el mismo host y
+      # hace proxy_pass a 127.0.0.1:5000. Así el puerto no queda
+      # expuesto directo a internet, solo accesible desde el propio server.
+
+volumes:
+  db_data:

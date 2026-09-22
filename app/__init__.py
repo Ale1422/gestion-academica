@@ -1,10 +1,11 @@
 # app/__init__.py
 
-from flask import Flask
+from flask import Flask, app
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from .config import Config
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 login_manager = LoginManager()
 db = SQLAlchemy()
@@ -12,6 +13,8 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     app.config.from_object(Config)
 
     login_manager.init_app(app)
