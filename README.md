@@ -57,3 +57,27 @@ Una vez que hayas descargado el proyecto, creado las variables de entorno y desc
 puedes arrancar el proyecto ejecutando:
 
 * ```flask run```
+
+## Levantar el proyecto con Docker
+
+# 1. Levantar solo la base primero
+docker compose up -d db
+
+# 2. Levantar el contenedor web pero sin correr el entrypoint todavía,
+#    para poder inicializar Alembic a mano dentro del container
+docker compose run --rm --entrypoint sh web
+
+# Ya adentro del container:
+flask db init
+flask db migrate -m "Esquema inicial"
+# Revisar el archivo generado en migrations/versions/ antes de aplicar,
+# sobre todo los ENUM y el UNIQUE constraint de Asistencias
+flask db upgrade
+exit
+
+# 3. Committear migrations/ al repo (sacarlo del .gitignore si estaba ignorado)
+git add migrations/
+git commit -m "Agrega migración inicial de Alembic"
+
+# 4. A partir de acá, levantar todo normal — el entrypoint se encarga
+docker compose up -d --build
